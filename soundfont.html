@@ -2,18 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>JS-Synthesizer MIDI Player (CDN)</title>
+  <title>Nextapps JS-Synthesizer MIDI Player (CDN)</title>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 20px; }
     .file-input-group { margin-bottom: 10px; }
     label { display: inline-block; width: 120px; text-align: right; margin-right: 5px; }
-    button { padding: 10px 15px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+    button { padding: 10px 15px; font-size: 16px; cursor: pointer; margin-top: 10px; margin-left: 5px; }
     #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
     small { display: block; margin-top: 20px; color: #555; }
   </style>
 </head>
 <body>
-  <h1>JS-Synthesizer MIDI Player (CDN)</h1>
+  <h1>Nextapps JS-Synthesizer MIDI Player</h1>
 
   <div class="file-input-group">
     <label for="sf2Input">SoundFont (.sf2):</label>
@@ -30,11 +30,12 @@
 
   <div id="status">ライブラリをCDNから読み込み中...</div>
   <small>
-    使用ライブラリ: Solfy/js-synthesizer (CDN経由)<br>
+    使用ライブラリ: nextapps-de/js-synthesizer (CDN経由)<br>
     インターネット接続が必要です。
   </small>
 
-  <script src="https://cdn.jsdelivr.net/npm/js-synthesizer@1.8.1/dist/js-synthesizer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-synthesizer@1.10.0/externals/libfluidsynth-2.3.0.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-synthesizer@1.10.0/dist/js-synthesizer.min.js"></script>
 
   <script>
     const sf2Input = document.getElementById('sf2Input');
@@ -43,63 +44,80 @@
     const stopBtn = document.getElementById('stopBtn');
     const statusDiv = document.getElementById('status');
 
+    let audioContext = null;
     let synthesizer = null;
-    let sequencer = null;
+    let audioNode = null;
+
     let sfontBuffer = null;
     let midiBuffer = null;
-    let audioContextResumed = false;
+    let isPlaying = false;
 
-    async function initSynthesizer() {
-      // ライブラリがCDNから読み込まれるのを少し待つ (JSSynthオブジェクトの存在確認)
-      if (typeof JSSynth === 'undefined') {
-        // リトライや待機処理を入れることもできるが、ここではエラー表示のみ
-        statusDiv.textContent = "エラー: JS-Synthesizerライブラリが読み込めていません。CDN接続を確認してください。";
-        console.error("JSSynth is not defined. Ensure CDN link is correct and internet is available.");
-        // 念のため少し待ってから再チェックする簡易的な処理
-        await new Promise(resolve => setTimeout(resolve, 1000));
-         if (typeof JSSynth === 'undefined') {
-            console.error("JSSynth still not defined after delay.");
-            return false;
-         }
-         console.log("JSSynth object became available after a short delay.");
+    // AudioContextをユーザー操作時に再開する関数
+    function resumeAudioContext() {
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          console.log('AudioContext resumed successfully by user gesture.');
+        }).catch(e => console.error('Error resuming AudioContext:', e));
       }
-      
-      statusDiv.textContent = "JS-Synthesizerライブラリ確認。初期化中...";
+    }
+    // 最初のユーザー操作でAudioContextをアクティブにする
+    document.body.addEventListener('click', resumeAudioContext, { once: true });
 
+
+    async function initializeSynthesizer() {
+      statusDiv.textContent = "ライブラリ準備待機中...";
       try {
-        // SharedArrayBufferを無効にして初期化 (クロスオリジン実行時の問題を避けるため)
-        const synthOptions = { sharedBuffer: false };
-        synthesizer = new JSSynth.Synthesizer(synthOptions);
-        sequencer = new JSSynth.Sequencer();
+        // JSSynth オブジェクトがグローバルに存在することを確認
+        if (typeof JSSynth === 'undefined' || typeof JSSynth.waitForReady !== 'function') {
+            await new Promise(resolve => setTimeout(resolve, 500)); // 少し待つ
+            if (typeof JSSynth === 'undefined' || typeof JSSynth.waitForReady !== 'function') {
+                 throw new Error("JS-Synthesizerライブラリが正しく読み込まれていません。");
+            }
+        }
+
+        await JSSynth.waitForReady();
+        statusDiv.textContent = "ライブラリ準備完了。シンセサイザー初期化中...";
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // ユーザー操作による再開を促す
+        if (audioContext.state === 'suspended') {
+            statusDiv.textContent += " (オーディオ再開のためページをクリックしてください)";
+        }
         
-        statusDiv.textContent = "シンセサイザー初期化待機中...";
-        // .wasmファイルもCDNから相対的に読み込まれる
-        await synthesizer.init(); 
-        await sequencer.init(synthesizer.getSampleRate());
-        sequencer.addSynth(synthesizer);
+        synthesizer = new JSSynth.Synthesizer();
+        await synthesizer.init(audioContext.sampleRate); // initはPromiseを返す
+
+        // オーディオノードを作成して接続 (バッファサイズはデフォルトまたは適切な値に)
+        const bufferSize = 8192; 
+        audioNode = synthesizer.createAudioNode(audioContext, bufferSize);
+        if (!audioNode) throw new Error("AudioNodeの作成に失敗しました。");
+        audioNode.connect(audioContext.destination);
 
         statusDiv.textContent = "シンセサイザー初期化完了。SoundFontとMIDIファイルを選択してください。";
-        return true;
+        enableFileInputs();
+
       } catch (error) {
-        console.error("シンセサイザー初期化エラー:", error);
-        statusDiv.textContent = `シンセサイザー初期化エラー: ${error.message} (WASMファイルのロード失敗の可能性あり)`;
-        return false;
+        console.error("初期化エラー:", error);
+        statusDiv.textContent = `初期化エラー: ${error.message}`;
+        disableAllControls();
       }
     }
 
-    // Web AudioContextをユーザー操作で開始するための処理
-    async function resumeAudioContextIfNeeded() {
-        if (synthesizer && synthesizer.getAudioContext() && synthesizer.getAudioContext().state === 'suspended') {
-            try {
-                await synthesizer.getAudioContext().resume();
-                console.log("AudioContext resumed by user interaction.");
-                audioContextResumed = true;
-            } catch (e) {
-                console.error("Failed to resume AudioContext:", e);
-            }
-        } else if (synthesizer && synthesizer.getAudioContext() && synthesizer.getAudioContext().state === 'running') {
-            audioContextResumed = true;
-        }
+    function enableFileInputs() {
+      sf2Input.disabled = false;
+      midiInput.disabled = false;
+    }
+
+    function disableAllControls() {
+      sf2Input.disabled = true;
+      midiInput.disabled = true;
+      playBtn.disabled = true;
+      stopBtn.disabled = true;
+    }
+    
+    function updatePlayButtonState() {
+        playBtn.disabled = !(sfontBuffer && midiBuffer && synthesizer && !isPlaying);
+        stopBtn.disabled = !isPlaying;
     }
 
     sf2Input.addEventListener('change', async function(event) {
@@ -109,12 +127,13 @@
         updatePlayButtonState();
         return;
       }
-      statusDiv.textContent = `SoundFont「${file.name}」を読み込み中...`;
+      statusDiv.textContent = `SoundFont「${file.name}」をロード中...`;
       try {
-        sfontBuffer = await file.arrayBuffer();
-        await synthesizer.loadSfont(sfontBuffer);
+        const buffer = await file.arrayBuffer();
+        await synthesizer.loadSFont(buffer);
+        sfontBuffer = buffer; // ロード成功したら保持（再利用はできないが、ロード済みフラグとして）
         statusDiv.textContent = `SoundFont「${file.name}」ロード完了。`;
-        console.log("SoundFont loaded successfully.");
+        console.log("SoundFont loaded.");
       } catch (error) {
         console.error("SoundFontロードエラー:", error);
         statusDiv.textContent = `SoundFontロードエラー: ${error.message}`;
@@ -132,9 +151,9 @@
       }
       statusDiv.textContent = `MIDIファイル「${file.name}」を読み込み中...`;
       try {
-        midiBuffer = await file.arrayBuffer();
+        midiBuffer = await file.arrayBuffer(); // MIDIデータは再生時に渡すので保持
         statusDiv.textContent = `MIDIファイル「${file.name}」ロード完了。`;
-        console.log("MIDI loaded successfully.");
+        console.log("MIDI file loaded.");
       } catch (error) {
         console.error("MIDIファイルロードエラー:", error);
         statusDiv.textContent = `MIDIファイルロードエラー: ${error.message}`;
@@ -143,87 +162,64 @@
       updatePlayButtonState();
     });
 
-    function updatePlayButtonState() {
-      if (sfontBuffer && midiBuffer && synthesizer && sequencer) {
-        playBtn.disabled = false;
-      } else {
-        playBtn.disabled = true;
-      }
-    }
-
     playBtn.addEventListener('click', async function() {
-      if (!sfontBuffer || !midiBuffer || !synthesizer || !sequencer) {
+      if (!sfontBuffer || !midiBuffer || !synthesizer) {
         statusDiv.textContent = "SoundFontまたはMIDIファイルがロードされていません。";
         return;
       }
+      if (isPlaying) return;
 
-      await resumeAudioContextIfNeeded(); 
-
-      if (synthesizer.getAudioContext() && synthesizer.getAudioContext().state !== 'running') {
-          statusDiv.textContent = "オーディオコンテキストがアクティブではありません。ページをクリックするなど操作してみてください。";
-          console.warn("AudioContext not running. Playback might fail.");
-      }
+      resumeAudioContext(); // 再生前にAudioContextの状態を確認・再開
 
       try {
-        statusDiv.textContent = "再生準備中...";
-        sequencer.stop(); 
-        sequencer.play(midiBuffer, false);
+        isPlaying = true;
+        updatePlayButtonState();
+        statusDiv.textContent = "MIDIデータをプレイヤーに追加中...";
+        
+        // 既存の再生データがあればクリアする機能は見当たらないため、
+        // 再生毎にaddSMFDataToPlayerを呼ぶ。
+        // ライブラリの挙動によっては、stopPlayer後に再度addする必要があるか確認要。
+        // このAPIでは、playerは内部的なもののようで、SMFデータを追加して再生する形。
+        await synthesizer.addSMFDataToPlayer(midiBuffer);
+        statusDiv.textContent = "再生開始...";
+        await synthesizer.playPlayer();
         statusDiv.textContent = "再生中...";
-        stopBtn.disabled = false;
-        playBtn.disabled = true;
-        checkPlaybackEnd();
+
+        // 再生終了を待つ
+        await synthesizer.waitForPlayerStopped();
+        // waitForPlayerStoppedの後に呼ばれるので、これが再生終了のタイミング
+        console.log("Playback finished.");
+        statusDiv.textContent = "再生終了。";
+        isPlaying = false;
+        updatePlayButtonState();
+
       } catch (error) {
         console.error("再生エラー:", error);
         statusDiv.textContent = `再生エラー: ${error.message}`;
-        stopBtn.disabled = true;
-        playBtn.disabled = false; 
+        isPlaying = false;
+        updatePlayButtonState();
       }
     });
 
-    stopBtn.addEventListener('click', function() {
-      if (sequencer) {
-        sequencer.stop();
-        statusDiv.textContent = "停止しました。";
-        stopBtn.disabled = true;
-        playBtn.disabled = false;
+    stopBtn.addEventListener('click', async function() {
+      if (!synthesizer || !isPlaying) return;
+      try {
+        await synthesizer.stopPlayer(); // 停止
         console.log("Playback stopped by user.");
-        if (playbackCheckInterval) clearInterval(playbackCheckInterval);
+        statusDiv.textContent = "停止しました。";
+      } catch (error) {
+        console.error("停止エラー:", error);
+        statusDiv.textContent = `停止エラー: ${error.message}`;
+      } finally {
+        isPlaying = false;
+        updatePlayButtonState();
       }
     });
-    
-    let playbackCheckInterval = null;
-    function checkPlaybackEnd() {
-        if (playbackCheckInterval) {
-            clearInterval(playbackCheckInterval);
-        }
-        playbackCheckInterval = setInterval(() => {
-            if (sequencer && !sequencer.isPlay()) {
-                 if (playBtn.disabled) { // 再生中だったものが終了した場合
-                    statusDiv.textContent = "再生終了。";
-                    stopBtn.disabled = true;
-                    playBtn.disabled = false;
-                    clearInterval(playbackCheckInterval);
-                    console.log("Playback ended.");
-                }
-            }
-        }, 500);
-    }
 
     // 初期化処理を開始
-    // DOMContentLoadedは不要、scriptはbodyの最後にあるのでDOMはロード済み
-    initSynthesizer().then(success => {
-      if (success) {
-        // 初期化成功
-      } else {
-        playBtn.disabled = true;
-        stopBtn.disabled = true;
-        sf2Input.disabled = true;
-        midiInput.disabled = true;
-        statusDiv.textContent += " UIを無効化しました。";
-      }
-    });
-
-    document.body.addEventListener('click', resumeAudioContextIfNeeded, { once: true });
+    sf2Input.disabled = true; // 初期は無効
+    midiInput.disabled = true;
+    initializeSynthesizer();
 
   </script>
 </body>
