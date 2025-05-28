@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドラムマシンシンセ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        .sequencer-step {
+            transition: background-color 0.1s ease;
+        }
+        .sequencer-step.active {
+            background-color: #fde047; /* Tailwind yellow-300 */
+        }
+        .sequencer-step.current {
+            border: 2px solid #2563eb; /* Tailwind blue-600 */
+            box-shadow: 0 0 5px #2563eb;
+        }
+        .pad:active {
+            transform: scale(0.95);
+        }
+        .no-select {
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .param-slider-container { display: flex; align-items: center; margin-bottom: 0.5rem; }
+        .param-slider-container label { min-width: 80px; font-size: 0.875rem; }
+        .param-slider-container input[type="range"] { flex-grow: 1; margin: 0 0.5rem; }
+        .param-slider-container span { min-width: 40px; text-align: right; font-size: 0.875rem;}
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 no-select">
+
+    <div class="bg-gray-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-4xl">
+        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-yellow-400">ドラムマシンシンセ</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 sm:mb-6 items-start">
+            <div class="flex space-x-2 sm:space-x-3 justify-center lg:justify-start">
+                <button id="playStopButton" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 text-sm sm:text-base rounded-lg shadow-md">再生</button>
+                <button id="clearButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 sm:px-4 text-sm sm:text-base rounded-lg shadow-md">クリア</button>
+            </div>
+            <div class="flex flex-col space-y-2 items-center">
+                <div class="flex space-x-2 sm:space-x-3 justify-center">
+                    <button id="recordButton" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 text-sm sm:text-base rounded-lg shadow-md">録音開始</button>
+                    <button id="exportWavButton" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-3 sm:px-4 text-sm sm:text-base rounded-lg shadow-md opacity-50 cursor-not-allowed" disabled>WAV書き出し</button>
+                </div>
+                 <div class="flex items-center space-x-1 w-full max-w-xs">
+                    <label for="reverbAmount" class="text-sm sm:text-base whitespace-nowrap">リバーブ:</label>
+                    <input type="range" id="reverbAmount" min="0" max="1" step="0.01" value="0" class="w-full cursor-pointer accent-yellow-400">
+                    <span id="reverbValue" class="text-sm sm:text-base w-10 text-right">0</span>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 justify-center lg:justify-end">
+                <div class="flex items-center space-x-1">
+                    <label for="tempo" class="text-sm sm:text-base">テンポ:</label>
+                    <input type="range" id="tempo" min="40" max="240" value="120" class="w-24 sm:w-28 md:w-32 cursor-pointer accent-yellow-400">
+                    <span id="tempoValue" class="text-sm sm:text-base w-8 sm:w-10 text-right">120</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                    <label for="masterVolume" class="text-sm sm:text-base">音量:</label>
+                    <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.7" class="w-20 sm:w-24 md:w-28 cursor-pointer accent-yellow-400">
+                </div>
+            </div>
+        </div>
+
+        <div id="padsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
+            </div>
+
+        <div class="mb-4 sm:mb-6 bg-gray-700 p-3 sm:p-4 rounded-lg shadow-inner">
+            <div class="flex items-center mb-3">
+                <label for="soundSelect" class="text-base sm:text-lg mr-2 sm:mr-3">編集サウンド:</label>
+                <select id="soundSelect" class="bg-gray-600 text-white p-2 text-sm sm:text-base rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </select>
+            </div>
+            <div id="paramControlsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-3 sm:gap-x-4">
+                </div>
+        </div>
+
+        <div id="sequencer" class="bg-gray-700 p-3 sm:p-4 rounded-lg shadow-inner overflow-x-auto">
+            </div>
+
+        <div id="messageArea" class="mt-3 sm:mt-4 text-center text-yellow-300 h-6 text-sm"></div>
+    </div>
+
+    <script>
+        const NUM_SOUNDS = 4;
+        const NUM_STEPS = 16;
+        const SOUND_NAMES = ['キック', 'スネア', 'ハイハット', 'クラップ'];
+        const PAD_COLORS = ['bg-red-600', 'bg-green-600', 'bg-blue-600', 'bg-purple-600'];
+        const PAD_HOVER_COLORS = ['hover:bg-red-500', 'hover:bg-green-500', 'hover:bg-blue-500', 'hover:bg-purple-500'];
+
+        let audioContext;
+        let masterGain; // Individual sounds connect here BEFORE effects
+        let finalOutputGain; // Connects to destination and recorder, AFTER effects
+        let pattern;
+        let currentStep = 0;
+        let isPlaying = false;
+        let tempo = 120;
+        let nextNoteTime = 0.0;
+        let scheduleAheadTime = 0.1;
+        let lookahead = 25.0;
+        let timerID;
+
+        // Effects
+        let convolver;
+        let reverbReturnGain;
+
+
+        let soundParams = {
+            kick: {
+                volume: { value: 0.8, min: 0, max: 1, step: 0.01, label: '音量' },
+                pitch: { value: 150, min: 20, max: 300, step: 1, label: 'ピッチ' },
+                decay: { value: 0.15, min: 0.01, max: 0.5, step: 0.01, label: 'ディケイ' }
+            },
+            snare: {
+                volume: { value: 0.7, min: 0, max: 1, step: 0.01, label: '音量' },
+                tone: { value: 180, min: 50, max: 500, step: 1, label: 'トーン' },
+                noiseDecay: { value: 0.15, min: 0.01, max: 0.3, step: 0.01, label: 'ノイズ減衰' },
+                toneDecay: { value: 0.1, min: 0.01, max: 0.2, step: 0.01, label: 'トーン減衰' }
+            },
+            hihat: {
+                volume: { value: 0.6, min: 0, max: 1, step: 0.01, label: '音量' },
+                frequency: { value: 7000, min: 1000, max: 15000, step: 100, label: '周波数' },
+                decay: { value: 0.05, min: 0.01, max: 0.2, step: 0.005, label: 'ディケイ' }
+            },
+            clap: {
+                volume: { value: 0.9, min: 0, max: 1, step: 0.01, label: '音量' }, // Default increased
+                decay: { value: 0.15, min: 0.05, max: 0.3, step: 0.01, label: 'ディケイ' },
+                spread: { value: 0.015, min: 0.005, max: 0.05, step: 0.001, label: '広がり' }
+            }
+        };
+
+        // DOM Elements
+        const playStopButton = document.getElementById('playStopButton');
+        const clearButton = document.getElementById('clearButton');
+        const tempoSlider = document.getElementById('tempo');
+        const tempoValueDisplay = document.getElementById('tempoValue');
+        const masterVolumeSlider = document.getElementById('masterVolume'); // This now controls finalOutputGain
+        const padsContainer = document.getElementById('padsContainer');
+        const sequencerGridElement = document.getElementById('sequencer');
+        const messageArea = document.getElementById('messageArea');
+        const soundSelect = document.getElementById('soundSelect');
+        const paramControlsContainer = document.getElementById('paramControlsContainer');
+        const recordButton = document.getElementById('recordButton');
+        const exportWavButton = document.getElementById('exportWavButton');
+        const reverbAmountSlider = document.getElementById('reverbAmount');
+        const reverbValueDisplay = document.getElementById('reverbValue');
+
+
+        // Recording variables
+        let mediaStreamDestination;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let recordedBlob = null;
+        let isRecording = false;
+
+        // --- 初期化 ---
+        async function init() { // initをasyncに変更
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (!audioContext) {
+                    showMessage("Web Audio API はこのブラウザではサポートされていません。");
+                    return;
+                }
+                masterGain = audioContext.createGain(); // For individual sound mixing before effects
+
+                // Reverb setup
+                convolver = audioContext.createConvolver();
+                reverbReturnGain = audioContext.createGain();
+                reverbReturnGain.gain.value = parseFloat(reverbAmountSlider.value);
+                
+                const impulseBuffer = await createReverbImpulseResponse();
+                if (impulseBuffer) {
+                    convolver.buffer = impulseBuffer;
+                } else {
+                    showMessage("リバーブ用インパルス応答の作成に失敗しました。");
+                }
+
+                // Audio Routing:
+                // Sounds -> their own gain -> masterGain
+                // masterGain -> finalOutputGain (dry path)
+                // masterGain -> convolver -> reverbReturnGain -> finalOutputGain (wet path)
+                
+                finalOutputGain = audioContext.createGain();
+                finalOutputGain.gain.value = parseFloat(masterVolumeSlider.value);
+                finalOutputGain.connect(audioContext.destination);
+
+                masterGain.connect(finalOutputGain); // Dry signal
+                masterGain.connect(convolver);       // Send to reverb
+                convolver.connect(reverbReturnGain);
+                reverbReturnGain.connect(finalOutputGain); // Wet signal to final output
+
+
+                // Setup for recording from the final output
+                mediaStreamDestination = audioContext.createMediaStreamDestination();
+                finalOutputGain.connect(mediaStreamDestination); 
+
+            } catch (e) {
+                showMessage("AudioContextまたはエフェクトの初期化に失敗しました: " + e.message);
+                console.error("Init error:", e);
+                return;
+            }
+
+            pattern = Array(NUM_SOUNDS).fill(null).map(() => Array(NUM_STEPS).fill(false));
+            createPads();
+            createSequencerGrid();
+            populateSoundSelect();
+            createParameterControls(soundSelect.value);
+            setupEventListeners();
+            updateTempoDisplay();
+            updateReverbValueDisplay();
+        }
+
+        // --- リバーブインパルス応答の生成 ---
+        async function createReverbImpulseResponse() {
+            if (!audioContext) return null;
+            const sampleRate = audioContext.sampleRate;
+            const length = sampleRate * 2.0; // 2秒のリバーブ
+            const impulse = audioContext.createBuffer(2, length, sampleRate); // ステレオ
+            const left = impulse.getChannelData(0);
+            const right = impulse.getChannelData(1);
+
+            for (let i = 0; i < length; i++) {
+                // 指数関数的に減衰するノイズを生成
+                left[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3); // 減衰カーブを調整
+                right[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+            }
+            return impulse;
+        }
+
+
+        // --- UI生成 ---
+        function createPads() {
+            padsContainer.innerHTML = '';
+            SOUND_NAMES.forEach((name, index) => {
+                const pad = document.createElement('button');
+                pad.textContent = name;
+                pad.classList.add('pad', 'text-white', 'font-semibold', 'py-4', 'sm:py-6', 'text-sm', 'sm:text-base', 'rounded-lg', 'shadow-md', 'transition', 'duration-150', 'ease-in-out', PAD_COLORS[index], PAD_HOVER_COLORS[index]);
+                pad.addEventListener('click', () => playSound(index, true));
+                padsContainer.appendChild(pad);
+            });
+        }
+
+        function createSequencerGrid() {
+            sequencerGridElement.innerHTML = '';
+            const table = document.createElement('table');
+            table.classList.add('w-full', 'border-collapse');
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const thInstrument = document.createElement('th');
+            thInstrument.classList.add('p-1', 'text-xs', 'text-left', 'text-gray-400', 'w-1/6', 'md:w-1/12');
+            headerRow.appendChild(thInstrument);
+            for (let i = 0; i < NUM_STEPS; i++) {
+                const th = document.createElement('th');
+                th.textContent = (i + 1).toString();
+                th.classList.add('p-1', 'text-xs', 'text-center', 'text-gray-400');
+                headerRow.appendChild(th);
+            }
+            const tbody = table.createTBody();
+            for (let i = 0; i < NUM_SOUNDS; i++) {
+                const row = tbody.insertRow();
+                const instrumentCell = row.insertCell();
+                instrumentCell.textContent = SOUND_NAMES[i];
+                instrumentCell.classList.add('p-1', 'text-xs', 'sm:text-sm', 'text-left', 'font-medium', 'text-gray-300');
+                for (let j = 0; j < NUM_STEPS; j++) {
+                    const cell = row.insertCell();
+                    cell.classList.add('sequencer-step', 'border', 'border-gray-600', 'w-8', 'h-8', 'sm:w-10', 'sm:h-10', 'cursor-pointer');
+                    cell.dataset.sound = i;
+                    cell.dataset.step = j;
+                    cell.addEventListener('click', toggleStep);
+                }
+            }
+            sequencerGridElement.appendChild(table);
+        }
+
+        function populateSoundSelect() {
+            SOUND_NAMES.forEach((name, index) => {
+                const option = document.createElement('option');
+                option.value = Object.keys(soundParams)[index];
+                option.textContent = name;
+                soundSelect.appendChild(option);
+            });
+        }
+
+        function createParameterControls(soundKey) {
+            paramControlsContainer.innerHTML = '';
+            const params = soundParams[soundKey];
+            if (!params) return;
+
+            Object.keys(params).forEach(paramKey => {
+                const paramConfig = params[paramKey];
+                const controlDiv = document.createElement('div');
+                controlDiv.classList.add('param-slider-container');
+                const label = document.createElement('label');
+                label.htmlFor = `${soundKey}-${paramKey}-slider`;
+                label.textContent = paramConfig.label + ':';
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.id = `${soundKey}-${paramKey}-slider`;
+                slider.min = paramConfig.min;
+                slider.max = paramConfig.max;
+                slider.step = paramConfig.step;
+                slider.value = paramConfig.value;
+                slider.classList.add('cursor-pointer', 'accent-yellow-400');
+                const valueDisplay = document.createElement('span');
+                valueDisplay.textContent = parseFloat(paramConfig.value).toFixed(paramConfig.step < 0.1 ? (paramConfig.step < 0.01 ? 3 : 2) : (paramConfig.step < 1 ? 1: 0));
+
+                slider.addEventListener('input', (e) => {
+                    const newValue = parseFloat(e.target.value);
+                    soundParams[soundKey][paramKey].value = newValue;
+                    valueDisplay.textContent = newValue.toFixed(paramConfig.step < 0.1 ? (paramConfig.step < 0.01 ? 3 : 2) : (paramConfig.step < 1 ? 1: 0));
+                });
+
+                controlDiv.appendChild(label);
+                controlDiv.appendChild(slider);
+                controlDiv.appendChild(valueDisplay);
+                paramControlsContainer.appendChild(controlDiv);
+            });
+        }
+
+        // --- イベントリスナー ---
+        function setupEventListeners() {
+            playStopButton.addEventListener('click', togglePlay);
+            clearButton.addEventListener('click', clearPattern);
+            tempoSlider.addEventListener('input', (e) => {
+                tempo = parseInt(e.target.value);
+                updateTempoDisplay();
+            });
+            masterVolumeSlider.addEventListener('input', (e) => { // Controls finalOutputGain
+                if (finalOutputGain) finalOutputGain.gain.value = parseFloat(e.target.value);
+            });
+            soundSelect.addEventListener('change', (e) => createParameterControls(e.target.value));
+            recordButton.addEventListener('click', toggleRecording);
+            exportWavButton.addEventListener('click', exportWAV);
+            reverbAmountSlider.addEventListener('input', (e) => {
+                if (reverbReturnGain) reverbReturnGain.gain.value = parseFloat(e.target.value);
+                updateReverbValueDisplay();
+            });
+        }
+
+        // --- シーケンサーロジック ---
+        function toggleStep(event) {
+            if (!event.target.dataset.sound || !event.target.dataset.step) return;
+            const soundIndex = parseInt(event.target.dataset.sound);
+            const stepIndex = parseInt(event.target.dataset.step);
+            pattern[soundIndex][stepIndex] = !pattern[soundIndex][stepIndex];
+            event.target.classList.toggle('active', pattern[soundIndex][stepIndex]);
+        }
+
+        function togglePlay() {
+            if (!audioContext) { showMessage("AudioContext未初期化"); return; }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => actuallyTogglePlay()).catch(err => showMessage("AudioContext再開失敗: " + err.message));
+            } else {
+                actuallyTogglePlay();
+            }
+        }
+
+        function actuallyTogglePlay() {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                playStopButton.textContent = '停止';
+                playStopButton.classList.replace('bg-blue-500', 'bg-yellow-500');
+                playStopButton.classList.replace('hover:bg-blue-600', 'hover:bg-yellow-600');
+                currentStep = 0;
+                nextNoteTime = audioContext.currentTime + 0.05;
+                scheduler();
+            } else {
+                playStopButton.textContent = '再生';
+                playStopButton.classList.replace('bg-yellow-500', 'bg-blue-500');
+                playStopButton.classList.replace('hover:bg-yellow-600', 'hover:bg-blue-600');
+                clearTimeout(timerID);
+                updateSequencerHighlight(-1);
+            }
+        }
+        
+        function scheduler() {
+            while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
+                scheduleNote(currentStep, nextNoteTime);
+                nextNote();
+            }
+            timerID = setTimeout(scheduler, lookahead);
+        }
+
+        function nextNote() {
+            const secondsPerStep = (60.0 / tempo) / 4;
+            nextNoteTime += secondsPerStep; 
+            currentStep = (currentStep + 1) % NUM_STEPS;
+        }
+
+        function scheduleNote(stepIndex, time) {
+            for (let soundIndex = 0; soundIndex < NUM_SOUNDS; soundIndex++) {
+                if (pattern[soundIndex][stepIndex]) playSound(soundIndex, false, time);
+            }
+            requestAnimationFrame(() => updateSequencerHighlight(stepIndex));
+        }
+
+        function updateSequencerHighlight(stepToHighlight) {
+            sequencerGridElement.querySelectorAll('.sequencer-step').forEach(cell => {
+                cell.classList.remove('current');
+                if (parseInt(cell.dataset.step) === stepToHighlight) cell.classList.add('current');
+            });
+        }
+
+        function clearPattern() {
+            pattern = Array(NUM_SOUNDS).fill(null).map(() => Array(NUM_STEPS).fill(false));
+            sequencerGridElement.querySelectorAll('.sequencer-step.active').forEach(cell => cell.classList.remove('active'));
+            showMessage("パターンがクリアされました。");
+        }
+
+        function updateTempoDisplay() { tempoValueDisplay.textContent = tempo; }
+        function updateReverbValueDisplay() { reverbValueDisplay.textContent = parseFloat(reverbAmountSlider.value).toFixed(2); }
+
+
+        // --- サウンド生成 (パラメータ使用) ---
+        function playSound(soundIndex, isPadClick = false, time) {
+            if (!audioContext || !masterGain) return;
+            const playTime = isPadClick ? audioContext.currentTime : time;
+            const soundKey = Object.keys(soundParams)[soundIndex];
+            switch (soundKey) {
+                case 'kick': createKick(playTime, soundParams.kick); break;
+                case 'snare': createSnare(playTime, soundParams.snare); break;
+                case 'hihat': createHiHat(playTime, soundParams.hihat); break;
+                case 'clap': createClap(playTime, soundParams.clap); break;
+            }
+        }
+
+        function createKick(time, params) { 
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain(); // Main envelope gain
+            const volumeGain = audioContext.createGain(); // Sound-specific volume control
+
+            volumeGain.gain.setValueAtTime(params.volume.value, time);
+            volumeGain.connect(masterGain); // Connect to pre-effect masterGain
+
+            osc.connect(gain);
+            gain.connect(volumeGain); // Envelope gain connects to volumeGain
+
+            osc.frequency.setValueAtTime(params.pitch.value, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + params.decay.value);
+            gain.gain.setValueAtTime(1, time); // Envelope starts at full
+            gain.gain.exponentialRampToValueAtTime(0.01, time + params.decay.value);
+            osc.type = 'sine';
+            osc.start(time);
+            osc.stop(time + params.decay.value);
+        }
+
+        function createSnare(time, params) { 
+            const volumeGain = audioContext.createGain();
+            volumeGain.gain.setValueAtTime(params.volume.value, time);
+            volumeGain.connect(masterGain);
+
+            // Noise component
+            const noise = audioContext.createBufferSource();
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseBuffer.length; i++) output[i] = (Math.random() * 2 - 1) * 0.5;
+            noise.buffer = noiseBuffer;
+            const noiseFilter = audioContext.createBiquadFilter();
+            noiseFilter.type = 'highpass';
+            noiseFilter.frequency.setValueAtTime(1000, time);
+            const noiseEnvGain = audioContext.createGain(); // Envelope for noise
+            noiseEnvGain.gain.setValueAtTime(1, time);
+            noiseEnvGain.gain.exponentialRampToValueAtTime(0.01, time + params.noiseDecay.value);
+            
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseEnvGain);
+            noiseEnvGain.connect(volumeGain); // Noise component to sound's volumeGain
+
+            // Tone component
+            const osc = audioContext.createOscillator();
+            const oscEnvGain = audioContext.createGain(); // Envelope for tone
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(params.tone.value, time);
+            oscEnvGain.gain.setValueAtTime(0.8, time); // Relative strength of tone
+            oscEnvGain.gain.exponentialRampToValueAtTime(0.01, time + params.toneDecay.value);
+            
+            osc.connect(oscEnvGain);
+            oscEnvGain.connect(volumeGain); // Tone component to sound's volumeGain
+
+            noise.start(time);
+            noise.stop(time + params.noiseDecay.value + 0.05);
+            osc.start(time);
+            osc.stop(time + params.toneDecay.value);
+        }
+
+        function createHiHat(time, params) { 
+            const volumeGain = audioContext.createGain();
+            volumeGain.gain.setValueAtTime(params.volume.value, time);
+            volumeGain.connect(masterGain);
+
+            const noise = audioContext.createBufferSource();
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.1, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseBuffer.length; i++) output[i] = (Math.random() * 2 - 1) * 0.3;
+            noise.buffer = noiseBuffer;
+
+            const noiseFilter = audioContext.createBiquadFilter();
+            noiseFilter.type = 'highpass';
+            noiseFilter.frequency.setValueAtTime(params.frequency.value, time);
+            
+            const envGain = audioContext.createGain(); // Envelope for hihat
+            envGain.gain.setValueAtTime(1, time);
+            envGain.gain.exponentialRampToValueAtTime(0.01, time + params.decay.value);
+            
+            noise.connect(noiseFilter);
+            noiseFilter.connect(envGain);
+            envGain.connect(volumeGain); // Hihat to sound's volumeGain
+
+            noise.start(time);
+            noise.stop(time + params.decay.value + 0.05);
+        }
+
+        function createClap(time, params) { 
+            const volumeGain = audioContext.createGain(); 
+            volumeGain.gain.setValueAtTime(params.volume.value, time);
+            volumeGain.connect(masterGain);
+
+            const fundamentalEnv = audioContext.createGain();
+            fundamentalEnv.gain.setValueAtTime(0.6, time); 
+            fundamentalEnv.gain.linearRampToValueAtTime(0.3, time + 0.003);
+            fundamentalEnv.gain.linearRampToValueAtTime(0, time + 0.003 + params.decay.value);
+            fundamentalEnv.connect(volumeGain); // Clap's main envelope to its volumeGain
+
+            for (let i = 0; i < 3; i++) {
+                const burstTime = time + i * params.spread.value;
+                const noise = audioContext.createBufferSource();
+                const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let j = 0; j < noiseBuffer.length; j++) output[j] = Math.random() * 2 - 1;
+                noise.buffer = noiseBuffer;
+                const noiseFilter = audioContext.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(1200, burstTime);
+                noiseFilter.Q.setValueAtTime(5, burstTime);
+                const noiseBurstGain = audioContext.createGain();
+                noiseBurstGain.gain.setValueAtTime(1, burstTime);
+                noiseBurstGain.gain.exponentialRampToValueAtTime(0.1, burstTime + 0.04);
+                
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseBurstGain);
+                noiseBurstGain.connect(fundamentalEnv); // Bursts connect to the fundamental envelope
+                
+                noise.start(burstTime);
+                noise.stop(burstTime + 0.05);
+            }
+        }
+
+        // --- 録音とWAV書き出し ---
+        function toggleRecording() {
+            if (!isRecording) actuallyStartRecording();
+            else stopRecording();
+        }
+
+        function actuallyStartRecording() {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    startMediaRecorder();
+                }).catch(err => showMessage("AudioContext再開失敗: " + err.message));
+                return;
+            }
+            startMediaRecorder();
+        }
+        
+        function startMediaRecorder() {
+            recordedChunks = [];
+            recordedBlob = null;
+            let options = { mimeType: 'audio/webm;codecs=opus' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'audio/ogg;codecs=opus' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'audio/wav' }; 
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = { mimeType: '' }; 
+                    }
+                }
+            }
+
+            try {
+                mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, options);
+            } catch (e) {
+                showMessage("MediaRecorder初期化失敗: " + e.message);
+                console.error("MediaRecorder init failed:", e, "Options:", options);
+                return;
+            }
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) recordedChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                recordedBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                isRecording = false;
+                recordButton.textContent = '録音開始';
+                recordButton.classList.replace('bg-red-500', 'bg-green-500');
+                recordButton.classList.replace('hover:bg-red-600', 'hover:bg-green-600');
+                exportWavButton.disabled = false;
+                exportWavButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                showMessage('録音完了。WAV書き出しが可能です。');
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordButton.textContent = '録音停止';
+            recordButton.classList.replace('bg-green-500', 'bg-red-500');
+            recordButton.classList.replace('hover:bg-green-600', 'hover:bg-red-600');
+            exportWavButton.disabled = true;
+            exportWavButton.classList.add('opacity-50', 'cursor-not-allowed');
+            showMessage('録音中...');
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        }
+
+        async function exportWAV() {
+            if (!recordedBlob) { showMessage('録音データがありません。'); return; }
+            showMessage('WAVファイルに変換中...');
+            exportWavButton.disabled = true; 
+            try {
+                const arrayBuffer = await recordedBlob.arrayBuffer();
+                if (audioContext.state === 'suspended') await audioContext.resume();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const wavBlob = audioBufferToWav(audioBuffer);
+
+                const url = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+                a.download = `drum-machine-${timestamp}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showMessage('WAVファイルを書き出しました。');
+                    exportWavButton.disabled = false; 
+                }, 100);
+            } catch (error) {
+                console.error('WAVへの変換または書き出しに失敗:', error);
+                showMessage('WAV書き出し失敗: ' + error.message);
+                exportWavButton.disabled = false; 
+            }
+        }
+
+        function audioBufferToWav(buffer) {
+            let numOfChan = buffer.numberOfChannels,
+                btwLength = buffer.length * numOfChan * 2 + 44,
+                btwArrBuff = new ArrayBuffer(btwLength),
+                btwView = new DataView(btwArrBuff),
+                btwChnls = [],
+                btwIndex,
+                btwSample,
+                btwOffset = 0,
+                btwPos = 0;
+            setUint32(0x46464952); 
+            setUint32(btwLength - 8); 
+            setUint32(0x45564157); 
+            setUint32(0x20746d66); 
+            setUint32(16); 
+            setUint16(1); 
+            setUint16(numOfChan);
+            setUint32(buffer.sampleRate);
+            setUint32(buffer.sampleRate * 2 * numOfChan); 
+            setUint16(numOfChan * 2); 
+            setUint16(16); 
+            setUint32(0x61746164); 
+            setUint32(btwLength - btwPos - 4); 
+
+            for (btwIndex = 0; btwIndex < buffer.numberOfChannels; btwIndex++)
+                btwChnls.push(buffer.getChannelData(btwIndex));
+
+            while (btwPos < btwLength) {
+                for (btwIndex = 0; btwIndex < numOfChan; btwIndex++) {
+                    btwSample = Math.max(-1, Math.min(1, btwChnls[btwIndex][btwOffset])); 
+                    btwSample = (0.5 + btwSample < 0 ? btwSample * 32768 : btwSample * 32767) | 0; 
+                    btwView.setInt16(btwPos, btwSample, true); 
+                    btwPos += 2;
+                }
+                btwOffset++;
+            }
+            return new Blob([btwArrBuff], { type: "audio/wav" });
+
+            function setUint16(data) {
+                btwView.setUint16(btwPos, data, true);
+                btwPos += 2;
+            }
+            function setUint32(data) {
+                btwView.setUint32(btwPos, data, true);
+                btwPos += 4;
+            }
+        }
+
+        function showMessage(message, duration = 3000) {
+            messageArea.textContent = message;
+            clearTimeout(messageArea.timer);
+            messageArea.timer = setTimeout(() => {
+                if (messageArea.textContent === message) messageArea.textContent = '';
+            }, duration);
+        }
+
+        window.addEventListener('load', init);
+
+    </script>
+</body>
+</html>
