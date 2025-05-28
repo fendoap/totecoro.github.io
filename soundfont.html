@@ -3,116 +3,157 @@
 <head>
   <meta charset="UTF-8">
   <title>MIDI × SoundFont プレイヤー</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    small {
+      display: block;
+      margin-top: 10px;
+      color: #555;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    input[type="file"] {
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
-<body style="text-align:center; font-family:sans-serif;">
-  <h1>MIDI × mini_piano.sf2 プレイヤー</h1>
+<body>
+  <h1>MIDI × SoundFont プレイヤー</h1>
+
   <input type="file" id="midiInput" accept=".mid,.midi"><br>
   <button id="playBtn" disabled>再生</button>
+
   <div id="status">SoundFontをロード中...</div>
-  <br>
-  <small>※最初の再生時、sf2ロードに少し時間がかかります</small>
+  <small>※ sf2ファイルのロードには数秒かかることがあります。</small>
 
   <script src="https://cdn.jsdelivr.net/npm/@g200kg/fluidsynth@2.3.4/dist/fluidsynth.js"></script>
 
   <script>
-    let synth, player, midiBuffer;
+    let synth = null;
+    let player = null;
+    let midiFileBuffer = null;
 
-    // GitHub Pages内のsf2ファイルのパス
-    // HTMLファイルからの相対パスで指定してください。
-    // 例: HTMLファイルと同じ階層なら "mini_piano.sf2"
-    // 例: "assets"フォルダの中なら "assets/mini_piano.sf2"
-    const sf2url = "mini_piano.sf2";
-
-    const statusDiv = document.getElementById('status');
-    const playBtn = document.getElementById('playBtn');
     const midiInput = document.getElementById('midiInput');
+    const playBtn = document.getElementById('playBtn');
+    const statusDiv = document.getElementById('status');
 
-    // FluidSynth の初期化
-    fluidsynth.ready.then(function () {
-      synth = new fluidsynth.Synth();
-      // sf2読み込み
-      fetch(sf2url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`SoundFontのロードに失敗しました: ${response.status} ${response.statusText}`);
-          }
-          return response.arrayBuffer();
-        })
-        .then(arrayBuffer => {
-          const result = synth.sfloadMem(arrayBuffer, true); // true = set as default
-          if (result === -1) {
-            statusDiv.textContent = "SoundFontのロードに失敗しました。ファイルを確認してください。";
-            console.error("Failed to load SoundFont into synth.");
-          } else {
-            statusDiv.textContent = "mini_piano.sf2 ロード完了！MIDIファイルを選んでください";
-            // SoundFontロード成功後にMIDI入力を有効にする (任意)
+    // --- SoundFontファイルの指定 ---
+    // HTMLファイルと同じフォルダに "mini_piano.sf2" を置いている場合
+    const sf2url = "mini_piano.sf2";
+    // もしファイル名が違う場合や、別の場所にある場合は、ここを適切に変更してください。
+    // 例: "soundfonts/my_soundfont.sf2"
+
+    // FluidSynth.js の準備が完了したら実行
+    if (typeof fluidsynth !== 'undefined') {
+      fluidsynth.ready.then(function () {
+        statusDiv.textContent = "FluidSynth準備完了。SoundFontをロード中...";
+        synth = new fluidsynth.Synth();
+
+        // SoundFontファイルをフェッチしてロード
+        fetch(sf2url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`SoundFontファイルの取得に失敗: ${response.status} ${response.statusText}`);
+            }
+            return response.arrayBuffer();
+          })
+          .then(arrayBuffer => {
+            const result = synth.sfloadMem(arrayBuffer, true); // true = set as default
+            if (result === -1) {
+              throw new Error("SoundFontのシンセサイザーへのロードに失敗しました。");
+            }
+            statusDiv.textContent = "SoundFontロード完了。MIDIファイルを選択してください。";
+            // MIDIファイル入力欄を有効化 (任意、初期状態は有効)
             // midiInput.disabled = false;
-          }
-        })
-        .catch(error => {
-          console.error("SoundFontの読み込み処理中にエラー:", error);
-          statusDiv.textContent = `SoundFont (${sf2url}) の読み込みに失敗しました。パスやファイルを確認してください。`;
-        });
-    });
+          })
+          .catch(error => {
+            console.error("SoundFontロードエラー:", error);
+            statusDiv.textContent = `SoundFont (${sf2url}) のロードに失敗しました: ${error.message}`;
+            playBtn.disabled = true; // SoundFontがないと再生できないのでボタンを無効化
+          });
+      }).catch(error => {
+          console.error("FluidSynth.ready でエラー:", error);
+          statusDiv.textContent = "FluidSynthライブラリの初期化に失敗しました。ページを再読み込みしてみてください。";
+      });
+    } else {
+      // このメッセージが表示される場合、fluidsynth.jsの読み込み自体に失敗しています。
+      // (CDNのリンク切れ、ネットワークの問題、ブラウザの拡張機能によるブロックなど)
+      statusDiv.textContent = "FluidSynthライブラリの読み込みに失敗しました。ネットワーク接続とブラウザのコンソールを確認してください。";
+      console.error("fluidsynthオブジェクトが定義されていません。");
+      playBtn.disabled = true;
+    }
 
-    // MIDIファイル選択時
-    midiInput.addEventListener('change', function (e) {
-      const file = e.target.files[0];
+    // MIDIファイルが選択されたときの処理
+    midiInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
       if (!file) {
         playBtn.disabled = true;
         return;
       }
-      const reader = new FileReader();
-      
-      reader.onload = function (event) {
-        midiBuffer = new Uint8Array(event.target.result);
-        playBtn.disabled = false;
-        statusDiv.textContent = "MIDIファイル準備OK。再生ボタンを押してください。";
-      };
 
-      reader.onerror = function (event) {
-        console.error("MIDIファイルの読み込みに失敗しました:", event.target.error);
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        midiFileBuffer = new Uint8Array(e.target.result);
+        statusDiv.textContent = `MIDIファイル「${file.name}」準備完了。再生ボタンを押してください。`;
+        if (synth && synth.isReady && synth.isReady()) { // synth がロード済みか確認 (isReadyは存在すれば)
+             playBtn.disabled = false;
+        } else if (synth) { // isReadyがなくてもsynthがあれば一旦有効化
+             playBtn.disabled = false;
+        } else {
+             statusDiv.textContent += " (ただしSoundFont未ロード)";
+             playBtn.disabled = true;
+        }
+      };
+      reader.onerror = function(e) {
+        console.error("MIDIファイル読み込みエラー:", e);
         statusDiv.textContent = "MIDIファイルの読み込みに失敗しました。";
+        midiFileBuffer = null;
         playBtn.disabled = true;
       };
-
       reader.readAsArrayBuffer(file);
     });
 
-    // 再生ボタン
-    playBtn.addEventListener('click', function () {
-      if (!midiBuffer || !synth || !synth.isReady()) { // synth.isReady() はFluidSynth.jsのAPIに依存します。ない場合は削除
-        statusDiv.textContent = "再生準備ができていません。SoundFontがロードされ、MIDIファイルが選択されているか確認してください。";
+    // 再生ボタンがクリックされたときの処理
+    playBtn.addEventListener('click', function() {
+      if (!synth || !midiFileBuffer) {
+        statusDiv.textContent = "再生の準備ができていません。SoundFontとMIDIファイルを確認してください。";
         return;
       }
-      // 一度止める
+
+      // 既存のプレイヤーがあれば停止
       if (player) {
         player.stop();
       }
+
       player = new fluidsynth.Player(synth);
-      const playResult = player.playMem(midiBuffer);
 
-      // playMemが成功したかどうかの明確な戻り値はドキュメントにないため、
-      // 再生が開始されたことをUIで示す
-      if (playResult !== undefined ) { // playMemが何か返す場合 (例: 0 for success, -1 for failure)
-          // 成功・失敗に応じて処理 (現バージョンではplayMemはvoidの可能性が高い)
-      }
-
+      player.playMem(midiFileBuffer);
       statusDiv.textContent = "再生中...";
 
       player.on('endOfScore', function() {
-        statusDiv.textContent = "再生終了";
-        // 再生終了後、再度再生できるようにボタンを有効に保つか、
-        // あるいは特定の状態にするか選べます。
-        // playBtn.disabled = true; // もし一度再生したら再度ファイル選択を促す場合など
+        statusDiv.textContent = "再生終了。";
+        // 必要であれば、ここで再生ボタンを再度無効化するなど
+        // playBtn.disabled = true;
       });
 
-      // エラーイベントのリスナー (もしあれば)
+      // (オプション) プレイヤーエラーハンドリング
       // player.on('error', function(err) {
-      //   console.error("Player error:", err);
-      //   statusDiv.textContent = "再生エラーが発生しました。";
+      //   console.error("再生エラー:", err);
+      //   statusDiv.textContent = "再生中にエラーが発生しました。";
       // });
     });
+
   </script>
 </body>
 </html>
