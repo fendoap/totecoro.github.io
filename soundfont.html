@@ -2,10 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Nextapps JS-Synthesizer MIDI Player (Tempo Fix)</title>
+  <title>Nextapps JS-Synthesizer MIDI Player (Record to WAV)</title>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 20px; }
     .file-input-group, .control-group { margin-bottom: 10px; }
+    .button-group { margin-top: 15px; }
     label { display: inline-block; width: 120px; text-align: right; margin-right: 5px; }
     input[type="number"] { width: 70px; }
     button { padding: 10px 15px; font-size: 16px; cursor: pointer; margin-top: 10px; margin-left: 5px; }
@@ -28,8 +29,14 @@
     <button id="setTempoBtn" disabled>テンポ適用</button>
   </div>
 
-  <button id="playBtn" disabled>再生</button>
-  <button id="stopBtn" disabled>停止</button>
+  <div class="button-group">
+    <button id="playBtn" disabled>再生</button>
+    <button id="stopBtn" disabled>停止</button>
+  </div>
+  <div class="button-group">
+    <button id="recordStartBtn" disabled>録音開始</button>
+    <button id="recordStopBtn" disabled>録音停止・WAV保存</button>
+  </div>
 
   <div id="status">ライブラリをCDNから読み込み中...</div>
   <small>
@@ -47,15 +54,23 @@
     const statusDiv = document.getElementById('status');
     const tempoInput = document.getElementById('tempoInput');
     const setTempoBtn = document.getElementById('setTempoBtn');
+    const recordStartBtn = document.getElementById('recordStartBtn');
+    const recordStopBtn = document.getElementById('recordStopBtn');
 
     let audioContext = null;
     let synthesizer = null;
-    let audioNode = null;
+    let audioNode = null; // Synthesizer's output node
 
     let sfontLoaded = false;
     let midiBuffer = null;
     let isPlaying = false;
     let currentPlayPromise = null;
+
+    // Recording related variables
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let mediaStreamDestination = null;
+    let isRecording = false;
 
     function resumeAudioContext() {
       if (audioContext && audioContext.state === 'suspended') {
@@ -86,7 +101,13 @@
         await synthesizer.init(audioContext.sampleRate);
         audioNode = synthesizer.createAudioNode(audioContext, 8192);
         if (!audioNode) throw new Error("AudioNodeの作成に失敗しました。");
-        audioNode.connect(audioContext.destination);
+        audioNode.connect(audioContext.destination); // For live playback
+
+        // Setup for recording
+        mediaStreamDestination = audioContext.createMediaStreamDestination();
+        audioNode.connect(mediaStreamDestination); // Also connect synth output for recording
+        console.log("Audio pipeline for playback and recording established.");
+
 
         statusDiv.textContent = "シンセサイザー初期化完了。デフォルトSoundFont (mini_piano.sf2) をロード中...";
         const response = await fetch('mini_piano.sf2');
@@ -99,6 +120,7 @@
         
         statusDiv.textContent = "SoundFont (mini_piano.sf2) ロード完了。MIDIファイルを選択してください。";
         midiInput.disabled = false;
+        recordStartBtn.disabled = false; // Enable recording once synth is ready
 
       } catch (error) {
         console.error("初期化またはSoundFontロードエラー:", error);
@@ -113,19 +135,24 @@
       stopBtn.disabled = true;
       tempoInput.disabled = true;
       setTempoBtn.disabled = true;
+      recordStartBtn.disabled = true;
+      recordStopBtn.disabled = true;
     }
     
     function updatePlayButtonState() {
-        playBtn.disabled = !(sfontLoaded && midiBuffer && synthesizer && !isPlaying);
+        playBtn.disabled = !(sfontLoaded && midiBuffer && synthesizer && !isPlaying && !isRecording);
         stopBtn.disabled = !isPlaying;
-        const controlsDisabled = !(sfontLoaded && midiBuffer && synthesizer);
+        const controlsDisabled = !(sfontLoaded && midiBuffer && synthesizer && !isRecording);
         tempoInput.disabled = controlsDisabled;
         setTempoBtn.disabled = controlsDisabled;
+        recordStartBtn.disabled = isRecording || !(sfontLoaded && synthesizer); // Disable if recording or synth not ready
+        recordStopBtn.disabled = !isRecording;
     }
 
     midiInput.addEventListener('change', async function(event) {
+      // ... (previous midiInput logic remains the same)
       const file = event.target.files[0];
-      if (!file || !synthesizer) { // synthesizerもチェック
+      if (!file || !synthesizer) {
         midiBuffer = null;
         updatePlayButtonState();
         return;
@@ -144,13 +171,9 @@
       try {
         midiBuffer = await file.arrayBuffer();
         console.log("New MIDI file loaded into buffer.");
-
-        // 新しいMIDIデータをプレイヤーにロードして、そのテンポを取得・表示
-        await synthesizer.addSMFDataToPlayer(midiBuffer); // 内部プレイヤーにセット
-        const smfTempo = await synthesizer.getPlayerTempo(); // テンポを取得
-        tempoInput.value = Math.round(smfTempo); // BPMとして表示
-        // addSMFDataToPlayerは再生を開始しないので、stopPlayerは不要
-        
+        await synthesizer.addSMFDataToPlayer(midiBuffer);
+        const smfTempo = await synthesizer.getPlayerTempo();
+        tempoInput.value = Math.round(smfTempo);
         statusDiv.textContent = `MIDI「${file.name}」(約${Math.round(smfTempo)}BPM) ロード完了。`;
       } catch (error) {
         console.error("MIDIファイルロード/テンポ取得エラー:", error);
@@ -161,95 +184,134 @@
     });
 
     playBtn.addEventListener('click', async function() {
-      if (!sfontLoaded || !midiBuffer || !synthesizer) return;
+      // ... (previous playBtn logic remains the same, ensure isRecording is checked)
+      if (!sfontLoaded || !midiBuffer || !synthesizer || isRecording) return; // Don't play if recording
       if (isPlaying) return;
-
       resumeAudioContext(); 
-
       try {
         isPlaying = true;
         updatePlayButtonState();
         statusDiv.textContent = "再生準備中...";
-        
-        // MIDIデータは既にmidiInputのイベントリスナーでaddSMFDataToPlayerされているか、
-        // または最初の一回はここでaddする。安全のため毎回addSMFDataToPlayerを呼ぶ。
-        // (addSMFDataToPlayerは既存のデータをクリアして新しいデータをロードすると想定)
         await synthesizer.addSMFDataToPlayer(midiBuffer);
-        
         const userBpm = parseInt(tempoInput.value);
         if (!isNaN(userBpm) && userBpm >= 20 && userBpm <= 400) {
             await synthesizer.setPlayerTempo(userBpm);
-            console.log(`User tempo ${userBpm} BPM applied.`);
-            statusDiv.textContent = `再生開始... (テンポ: ${userBpm} BPM)`;
-        } else {
-            const currentTempo = await synthesizer.getPlayerTempo();
-            tempoInput.value = Math.round(currentTempo); // 念のため表示を更新
-            // MIDIファイル内のテンポが使われる
-            statusDiv.textContent = `再生開始... (テンポ: 約${Math.round(currentTempo)} BPM)`;
         }
-        
-        await synthesizer.playPlayer();
-        // playPlayer呼び出し直後に再度getPlayerTempoで確認
         const actualPlayTempo = await synthesizer.getPlayerTempo();
-        console.log(`Actual playback tempo started at (approx): ${actualPlayTempo} BPM`);
+        tempoInput.value = Math.round(actualPlayTempo);
         statusDiv.textContent = `再生中... (テンポ: 約${Math.round(actualPlayTempo)} BPM)`;
-
-
+        console.log(`Actual playback tempo started at (approx): ${actualPlayTempo} BPM`);
+        await synthesizer.playPlayer();
         currentPlayPromise = synthesizer.waitForPlayerStopped();
         await currentPlayPromise;
         currentPlayPromise = null;
-        
         if (isPlaying) { 
             console.log("Playback finished naturally.");
             statusDiv.textContent = "再生終了。";
             isPlaying = false;
             updatePlayButtonState();
         }
-
       } catch (error) {
-        console.error("再生エラー:", error);
-        statusDiv.textContent = `再生エラー: ${error.message}`;
-        isPlaying = false;
-        updatePlayButtonState();
+        console.error("再生エラー:", error); statusDiv.textContent = `再生エラー: ${error.message}`;
+        isPlaying = false; updatePlayButtonState();
       }
     });
 
     stopBtn.addEventListener('click', async function() {
+      // ... (previous stopBtn logic remains the same)
       if (!synthesizer || !isPlaying) return;
       try {
         await synthesizer.stopPlayer(); 
-        console.log("Playback stopped by user.");
-        statusDiv.textContent = "停止しました。";
+        console.log("Playback stopped by user."); statusDiv.textContent = "停止しました。";
       } catch (error) { console.error("停止エラー:", error); statusDiv.textContent = `停止エラー: ${error.message}`; }
-      finally {
-        isPlaying = false;
-        updatePlayButtonState();
-      }
+      finally { isPlaying = false; updatePlayButtonState(); }
     });
 
     setTempoBtn.addEventListener('click', async function() {
-      if (!synthesizer || !midiBuffer) { // midiBufferもチェック
-        statusDiv.textContent = "MIDIファイルがロードされていません。";
-        return;
-      }
+      // ... (previous setTempoBtn logic remains the same)
+      if (!synthesizer || !midiBuffer) { statusDiv.textContent = "MIDIファイルがロードされていません。"; return; }
       const bpm = parseInt(tempoInput.value);
-      if (isNaN(bpm) || bpm < 20 || bpm > 400) {
-        statusDiv.textContent = "テンポの値が無効です (20-400 BPM)。";
-        return;
-      }
+      if (isNaN(bpm) || bpm < 20 || bpm > 400) { statusDiv.textContent = "テンポの値が無効です (20-400 BPM)。"; return; }
       try {
         await synthesizer.setPlayerTempo(bpm);
-        const actualTempo = await synthesizer.getPlayerTempo(); // 設定後の値を確認
+        const actualTempo = await synthesizer.getPlayerTempo();
         statusDiv.textContent = `テンポを約 ${Math.round(actualTempo)} BPM に設定しました。`;
         console.log(`Tempo set to ${bpm} BPM, getPlayerTempo reports approx ${actualTempo} BPM.`);
-        // 再生中の場合、この変更が即座に反映されるかはライブラリ次第
-        if (isPlaying) {
-            statusDiv.textContent = `再生中... (テンポ: 約${Math.round(actualTempo)} BPM)`;
-        }
-      } catch (error) {
-        console.error("テンポ設定エラー:", error);
-        statusDiv.textContent = `テンポ設定エラー: ${error.message}`;
+        if (isPlaying) { statusDiv.textContent = `再生中... (テンポ: 約${Math.round(actualTempo)} BPM)`; }
+      } catch (error) { console.error("テンポ設定エラー:", error); statusDiv.textContent = `テンポ設定エラー: ${error.message}`; }
+    });
+
+    // --- Recording Logic ---
+    recordStartBtn.addEventListener('click', function() {
+      if (!synthesizer || !mediaStreamDestination || isRecording) return;
+      
+      resumeAudioContext(); // Ensure context is active
+      if (audioContext.state !== 'running') {
+          statusDiv.textContent = "オーディオコンテキストがアクティブではありません。録音開始前にページをクリックしてください。";
+          return;
       }
+
+      isRecording = true;
+      recordedChunks = [];
+      let mimeTypeToUse = 'audio/wav';
+      if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
+          console.warn(`MIME type ${mimeTypeToUse} is not supported by MediaRecorder.`);
+          mimeTypeToUse = 'audio/webm'; // Fallback
+          if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
+              console.error("Neither audio/wav nor audio/webm is supported by MediaRecorder.");
+              statusDiv.textContent = "録音エラー: サポートされている録音形式がありません。";
+              isRecording = false;
+              updatePlayButtonState();
+              return;
+          }
+          console.log(`Falling back to ${mimeTypeToUse}. File will be saved with .wav extension but might be ${mimeTypeToUse} format.`);
+      }
+      
+      try {
+        mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, { mimeType: mimeTypeToUse });
+
+        mediaRecorder.ondataavailable = function(event) {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = function() {
+          const finalMimeType = mediaRecorder.mimeType; // Actual mimeType used
+          const blob = new Blob(recordedChunks, { type: finalMimeType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          document.body.appendChild(a);
+          a.style.display = 'none';
+          a.href = url;
+          // 拡張子は .wav にするが、中身はブラウザの対応次第
+          const filename = `recording.${finalMimeType.includes('wav') ? 'wav' : 'webm'}`; 
+          a.download = filename;
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          statusDiv.textContent = `録音ファイル (${filename}) のダウンロード準備ができました。`;
+          recordedChunks = []; // Clear for next recording
+        };
+
+        mediaRecorder.start();
+        statusDiv.textContent = "録音中... (再生ボタンで音楽を再生してください)";
+        console.log(`Recording started with MIME type: ${mediaRecorder.mimeType}`);
+      } catch (e) {
+          console.error("MediaRecorderの開始に失敗:", e);
+          statusDiv.textContent = `録音開始エラー: ${e.message}`;
+          isRecording = false;
+      }
+      updatePlayButtonState();
+    });
+
+    recordStopBtn.addEventListener('click', function() {
+      if (!mediaRecorder || !isRecording) return;
+      mediaRecorder.stop(); // This will trigger onstop event for blob creation and download
+      isRecording = false;
+      statusDiv.textContent = "録音停止。ファイル処理中...";
+      console.log("Recording stopped by user.");
+      updatePlayButtonState();
     });
 
     initializeAndLoadDefaultSoundFont();
