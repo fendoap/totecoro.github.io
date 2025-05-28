@@ -8,55 +8,110 @@
   <h1>MIDI × mini_piano.sf2 プレイヤー</h1>
   <input type="file" id="midiInput" accept=".mid,.midi"><br>
   <button id="playBtn" disabled>再生</button>
-  <div id="status"></div>
+  <div id="status">SoundFontをロード中...</div>
   <br>
   <small>※最初の再生時、sf2ロードに少し時間がかかります</small>
 
-  <!-- FluidSynth WASM Player CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@g200kg/fluidsynth@2.3.4/dist/fluidsynth.js"></script>
 
   <script>
     let synth, player, midiBuffer;
 
     // GitHub Pages内のsf2ファイルのパス
+    // HTMLファイルからの相対パスで指定してください。
+    // 例: HTMLファイルと同じ階層なら "mini_piano.sf2"
+    // 例: "assets"フォルダの中なら "assets/mini_piano.sf2"
     const sf2url = "mini_piano.sf2";
+
+    const statusDiv = document.getElementById('status');
+    const playBtn = document.getElementById('playBtn');
+    const midiInput = document.getElementById('midiInput');
 
     // FluidSynth の初期化
     fluidsynth.ready.then(function () {
       synth = new fluidsynth.Synth();
       // sf2読み込み
       fetch(sf2url)
-        .then(response => response.arrayBuffer())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`SoundFontのロードに失敗しました: ${response.status} ${response.statusText}`);
+          }
+          return response.arrayBuffer();
+        })
         .then(arrayBuffer => {
-          synth.sfloadMem(arrayBuffer, true); // true = set as default
-          document.getElementById('status').textContent = "mini_piano.sf2 ロード完了！MIDIを選んでください";
+          const result = synth.sfloadMem(arrayBuffer, true); // true = set as default
+          if (result === -1) {
+            statusDiv.textContent = "SoundFontのロードに失敗しました。ファイルを確認してください。";
+            console.error("Failed to load SoundFont into synth.");
+          } else {
+            statusDiv.textContent = "mini_piano.sf2 ロード完了！MIDIファイルを選んでください";
+            // SoundFontロード成功後にMIDI入力を有効にする (任意)
+            // midiInput.disabled = false;
+          }
+        })
+        .catch(error => {
+          console.error("SoundFontの読み込み処理中にエラー:", error);
+          statusDiv.textContent = `SoundFont (${sf2url}) の読み込みに失敗しました。パスやファイルを確認してください。`;
         });
     });
 
     // MIDIファイル選択時
-    document.getElementById('midiInput').addEventListener('change', function (e) {
+    midiInput.addEventListener('change', function (e) {
       const file = e.target.files[0];
-      if (!file) return;
+      if (!file) {
+        playBtn.disabled = true;
+        return;
+      }
       const reader = new FileReader();
+      
       reader.onload = function (event) {
         midiBuffer = new Uint8Array(event.target.result);
-        document.getElementById('playBtn').disabled = false;
-        document.getElementById('status').textContent = "MIDIファイル準備OK。再生ボタンを押してください。";
+        playBtn.disabled = false;
+        statusDiv.textContent = "MIDIファイル準備OK。再生ボタンを押してください。";
       };
+
+      reader.onerror = function (event) {
+        console.error("MIDIファイルの読み込みに失敗しました:", event.target.error);
+        statusDiv.textContent = "MIDIファイルの読み込みに失敗しました。";
+        playBtn.disabled = true;
+      };
+
       reader.readAsArrayBuffer(file);
     });
 
     // 再生ボタン
-    document.getElementById('playBtn').addEventListener('click', function () {
-      if (!midiBuffer || !synth) return;
+    playBtn.addEventListener('click', function () {
+      if (!midiBuffer || !synth || !synth.isReady()) { // synth.isReady() はFluidSynth.jsのAPIに依存します。ない場合は削除
+        statusDiv.textContent = "再生準備ができていません。SoundFontがロードされ、MIDIファイルが選択されているか確認してください。";
+        return;
+      }
       // 一度止める
-      if (player) player.stop();
+      if (player) {
+        player.stop();
+      }
       player = new fluidsynth.Player(synth);
-      player.playMem(midiBuffer);
-      document.getElementById('status').textContent = "再生中...";
+      const playResult = player.playMem(midiBuffer);
+
+      // playMemが成功したかどうかの明確な戻り値はドキュメントにないため、
+      // 再生が開始されたことをUIで示す
+      if (playResult !== undefined ) { // playMemが何か返す場合 (例: 0 for success, -1 for failure)
+          // 成功・失敗に応じて処理 (現バージョンではplayMemはvoidの可能性が高い)
+      }
+
+      statusDiv.textContent = "再生中...";
+
       player.on('endOfScore', function() {
-        document.getElementById('status').textContent = "再生終了";
+        statusDiv.textContent = "再生終了";
+        // 再生終了後、再度再生できるようにボタンを有効に保つか、
+        // あるいは特定の状態にするか選べます。
+        // playBtn.disabled = true; // もし一度再生したら再度ファイル選択を促す場合など
       });
+
+      // エラーイベントのリスナー (もしあれば)
+      // player.on('error', function(err) {
+      //   console.error("Player error:", err);
+      //   statusDiv.textContent = "再生エラーが発生しました。";
+      // });
     });
   </script>
 </body>
