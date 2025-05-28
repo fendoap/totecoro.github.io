@@ -2,11 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Nextapps JS-Synthesizer MIDI Player (CDN)</title>
+  <title>Nextapps JS-Synthesizer MIDI Player (Tempo Control)</title>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 20px; }
-    .file-input-group { margin-bottom: 10px; }
+    .file-input-group, .control-group { margin-bottom: 10px; }
     label { display: inline-block; width: 120px; text-align: right; margin-right: 5px; }
+    input[type="number"] { width: 70px; }
     button { padding: 10px 15px; font-size: 16px; cursor: pointer; margin-top: 10px; margin-left: 5px; }
     #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
     small { display: block; margin-top: 20px; color: #555; }
@@ -14,15 +15,17 @@
 </head>
 <body>
   <h1>Nextapps JS-Synthesizer MIDI Player</h1>
-
-  <div class="file-input-group">
-    <label for="sf2Input">SoundFont (.sf2):</label>
-    <input type="file" id="sf2Input" accept=".sf2">
-  </div>
+  <p>SoundFont: mini_piano.sf2 (自動読み込み)</p>
 
   <div class="file-input-group">
     <label for="midiInput">MIDI (.mid, .midi):</label>
-    <input type="file" id="midiInput" accept=".mid,.midi">
+    <input type="file" id="midiInput" accept=".mid,.midi" disabled>
+  </div>
+
+  <div class="control-group">
+    <label for="tempoInput">テンポ (BPM):</label>
+    <input type="number" id="tempoInput" value="120" min="20" max="400" disabled>
+    <button id="setTempoBtn" disabled>テンポ適用</button>
   </div>
 
   <button id="playBtn" disabled>再生</button>
@@ -31,116 +34,95 @@
   <div id="status">ライブラリをCDNから読み込み中...</div>
   <small>
     使用ライブラリ: nextapps-de/js-synthesizer (CDN経由)<br>
-    インターネット接続が必要です。
+    mini_piano.sf2 がこのHTMLファイルと同じフォルダにある必要があります。
   </small>
 
   <script src="https://cdn.jsdelivr.net/npm/js-synthesizer@1.10.0/externals/libfluidsynth-2.3.0.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-synthesizer@1.10.0/dist/js-synthesizer.min.js"></script>
 
   <script>
-    const sf2Input = document.getElementById('sf2Input');
     const midiInput = document.getElementById('midiInput');
     const playBtn = document.getElementById('playBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusDiv = document.getElementById('status');
+    const tempoInput = document.getElementById('tempoInput');
+    const setTempoBtn = document.getElementById('setTempoBtn');
 
     let audioContext = null;
     let synthesizer = null;
     let audioNode = null;
 
-    let sfontBuffer = null;
+    let sfontLoaded = false; // SoundFontがロードされたかどうかのフラグ
     let midiBuffer = null;
     let isPlaying = false;
+    let currentPlayPromise = null; // 再生終了を待つPromise用
 
-    // AudioContextをユーザー操作時に再開する関数
     function resumeAudioContext() {
       if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
-          console.log('AudioContext resumed successfully by user gesture.');
+          console.log('AudioContext resumed.');
         }).catch(e => console.error('Error resuming AudioContext:', e));
       }
     }
-    // 最初のユーザー操作でAudioContextをアクティブにする
     document.body.addEventListener('click', resumeAudioContext, { once: true });
 
-
-    async function initializeSynthesizer() {
+    async function initializeAndLoadDefaultSoundFont() {
       statusDiv.textContent = "ライブラリ準備待機中...";
       try {
-        // JSSynth オブジェクトがグローバルに存在することを確認
         if (typeof JSSynth === 'undefined' || typeof JSSynth.waitForReady !== 'function') {
-            await new Promise(resolve => setTimeout(resolve, 500)); // 少し待つ
+            await new Promise(resolve => setTimeout(resolve, 500));
             if (typeof JSSynth === 'undefined' || typeof JSSynth.waitForReady !== 'function') {
                  throw new Error("JS-Synthesizerライブラリが正しく読み込まれていません。");
             }
         }
-
         await JSSynth.waitForReady();
         statusDiv.textContent = "ライブラリ準備完了。シンセサイザー初期化中...";
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        // ユーザー操作による再開を促す
         if (audioContext.state === 'suspended') {
             statusDiv.textContent += " (オーディオ再開のためページをクリックしてください)";
         }
         
         synthesizer = new JSSynth.Synthesizer();
-        await synthesizer.init(audioContext.sampleRate); // initはPromiseを返す
-
-        // オーディオノードを作成して接続 (バッファサイズはデフォルトまたは適切な値に)
-        const bufferSize = 8192; 
-        audioNode = synthesizer.createAudioNode(audioContext, bufferSize);
+        await synthesizer.init(audioContext.sampleRate);
+        audioNode = synthesizer.createAudioNode(audioContext, 8192);
         if (!audioNode) throw new Error("AudioNodeの作成に失敗しました。");
         audioNode.connect(audioContext.destination);
 
-        statusDiv.textContent = "シンセサイザー初期化完了。SoundFontとMIDIファイルを選択してください。";
-        enableFileInputs();
+        statusDiv.textContent = "シンセサイザー初期化完了。デフォルトSoundFont (mini_piano.sf2) をロード中...";
+        const response = await fetch('mini_piano.sf2');
+        if (!response.ok) {
+            throw new Error(`mini_piano.sf2 の取得に失敗: ${response.status} ${response.statusText}. HTMLと同じフォルダにあるか確認してください。`);
+        }
+        const sf2ArrayBuffer = await response.arrayBuffer();
+        await synthesizer.loadSFont(sf2ArrayBuffer);
+        sfontLoaded = true;
+        
+        statusDiv.textContent = "SoundFont (mini_piano.sf2) ロード完了。MIDIファイルを選択してください。";
+        midiInput.disabled = false;
 
       } catch (error) {
-        console.error("初期化エラー:", error);
-        statusDiv.textContent = `初期化エラー: ${error.message}`;
+        console.error("初期化またはSoundFontロードエラー:", error);
+        statusDiv.textContent = `エラー: ${error.message}`;
         disableAllControls();
       }
     }
 
-    function enableFileInputs() {
-      sf2Input.disabled = false;
-      midiInput.disabled = false;
-    }
-
     function disableAllControls() {
-      sf2Input.disabled = true;
       midiInput.disabled = true;
       playBtn.disabled = true;
       stopBtn.disabled = true;
+      tempoInput.disabled = true;
+      setTempoBtn.disabled = true;
     }
     
     function updatePlayButtonState() {
-        playBtn.disabled = !(sfontBuffer && midiBuffer && synthesizer && !isPlaying);
+        playBtn.disabled = !(sfontLoaded && midiBuffer && synthesizer && !isPlaying);
         stopBtn.disabled = !isPlaying;
+        // MIDIファイルがロードされたらテンポ変更を有効にする
+        tempoInput.disabled = !(sfontLoaded && midiBuffer && synthesizer);
+        setTempoBtn.disabled = !(sfontLoaded && midiBuffer && synthesizer);
     }
-
-    sf2Input.addEventListener('change', async function(event) {
-      const file = event.target.files[0];
-      if (!file || !synthesizer) {
-        sfontBuffer = null;
-        updatePlayButtonState();
-        return;
-      }
-      statusDiv.textContent = `SoundFont「${file.name}」をロード中...`;
-      try {
-        const buffer = await file.arrayBuffer();
-        await synthesizer.loadSFont(buffer);
-        sfontBuffer = buffer; // ロード成功したら保持（再利用はできないが、ロード済みフラグとして）
-        statusDiv.textContent = `SoundFont「${file.name}」ロード完了。`;
-        console.log("SoundFont loaded.");
-      } catch (error) {
-        console.error("SoundFontロードエラー:", error);
-        statusDiv.textContent = `SoundFontロードエラー: ${error.message}`;
-        sfontBuffer = null;
-      }
-      updatePlayButtonState();
-    });
 
     midiInput.addEventListener('change', async function(event) {
       const file = event.target.files[0];
@@ -149,11 +131,28 @@
         updatePlayButtonState();
         return;
       }
+
+      // もし再生中なら停止する
+      if (isPlaying && synthesizer) {
+        try {
+          await synthesizer.stopPlayer();
+          console.log("Previous playback stopped for new MIDI file.");
+        } catch (e) {
+          console.error("Error stopping player for new MIDI:", e);
+        } finally {
+          isPlaying = false;
+        }
+      }
+      // 既存の再生終了待機Promiseがあれば、それは解決されるはずだが、念のためリセット
+      currentPlayPromise = null; 
+
       statusDiv.textContent = `MIDIファイル「${file.name}」を読み込み中...`;
       try {
-        midiBuffer = await file.arrayBuffer(); // MIDIデータは再生時に渡すので保持
-        statusDiv.textContent = `MIDIファイル「${file.name}」ロード完了。`;
-        console.log("MIDI file loaded.");
+        midiBuffer = await file.arrayBuffer(); // 新しいMIDIデータを保持
+        statusDiv.textContent = `MIDI「${file.name}」ロード完了。再生可能です。`;
+        console.log("New MIDI file loaded.");
+        // 新しいMIDIがロードされたので、デフォルトのテンポ表示を促す（または取得して表示）
+        // ここでは、ユーザーが手動でテンポ設定することを期待
       } catch (error) {
         console.error("MIDIファイルロードエラー:", error);
         statusDiv.textContent = `MIDIファイルロードエラー: ${error.message}`;
@@ -163,35 +162,48 @@
     });
 
     playBtn.addEventListener('click', async function() {
-      if (!sfontBuffer || !midiBuffer || !synthesizer) {
-        statusDiv.textContent = "SoundFontまたはMIDIファイルがロードされていません。";
+      if (!sfontLoaded || !midiBuffer || !synthesizer) {
+        statusDiv.textContent = "SoundFontまたはMIDIファイルが正しくロードされていません。";
         return;
       }
       if (isPlaying) return;
 
-      resumeAudioContext(); // 再生前にAudioContextの状態を確認・再開
+      resumeAudioContext(); 
 
       try {
         isPlaying = true;
         updatePlayButtonState();
         statusDiv.textContent = "MIDIデータをプレイヤーに追加中...";
         
-        // 既存の再生データがあればクリアする機能は見当たらないため、
-        // 再生毎にaddSMFDataToPlayerを呼ぶ。
-        // ライブラリの挙動によっては、stopPlayer後に再度addする必要があるか確認要。
-        // このAPIでは、playerは内部的なもののようで、SMFデータを追加して再生する形。
-        await synthesizer.addSMFDataToPlayer(midiBuffer);
+        await synthesizer.addSMFDataToPlayer(midiBuffer); // これでプレイヤーは新しいMIDIデータで準備される
+        
+        // ユーザーが設定したテンポがあれば、再生前に適用
+        const userTempo = parseInt(tempoInput.value);
+        if (!isNaN(userTempo) && userTempo >= 20 && userTempo <= 400) {
+            await synthesizer.setPlayerTempo(userTempo);
+            console.log(`User tempo ${userTempo} BPM applied before playback.`);
+        } else {
+            // MIDIファイル内のテンポが使用される
+            const currentTempo = await synthesizer.getPlayerTempo(); // MIDIファイルから読み込まれたテンポ
+            tempoInput.value = Math.round(currentTempo); // 表示を更新
+            console.log(`Playing with MIDI file's tempo: ${currentTempo} BPM (approx).`);
+        }
+
         statusDiv.textContent = "再生開始...";
         await synthesizer.playPlayer();
         statusDiv.textContent = "再生中...";
 
-        // 再生終了を待つ
-        await synthesizer.waitForPlayerStopped();
-        // waitForPlayerStoppedの後に呼ばれるので、これが再生終了のタイミング
-        console.log("Playback finished.");
-        statusDiv.textContent = "再生終了。";
-        isPlaying = false;
-        updatePlayButtonState();
+        currentPlayPromise = synthesizer.waitForPlayerStopped();
+        await currentPlayPromise;
+        currentPlayPromise = null;
+        
+        // この時点で isPlaying が true の場合 (stopBtnで停止されていない場合) のみ再生終了と判断
+        if (isPlaying) { 
+            console.log("Playback finished naturally.");
+            statusDiv.textContent = "再生終了。";
+            isPlaying = false;
+            updatePlayButtonState();
+        }
 
       } catch (error) {
         console.error("再生エラー:", error);
@@ -204,7 +216,7 @@
     stopBtn.addEventListener('click', async function() {
       if (!synthesizer || !isPlaying) return;
       try {
-        await synthesizer.stopPlayer(); // 停止
+        await synthesizer.stopPlayer(); 
         console.log("Playback stopped by user.");
         statusDiv.textContent = "停止しました。";
       } catch (error) {
@@ -212,14 +224,36 @@
         statusDiv.textContent = `停止エラー: ${error.message}`;
       } finally {
         isPlaying = false;
+        if (currentPlayPromise) {
+            // stopPlayer が waitForPlayerStopped の Promise を解決させるはず
+            // もし解決しない場合のフォールバックや追加処理はここには不要か
+        }
         updatePlayButtonState();
       }
     });
 
-    // 初期化処理を開始
-    sf2Input.disabled = true; // 初期は無効
-    midiInput.disabled = true;
-    initializeSynthesizer();
+    setTempoBtn.addEventListener('click', async function() {
+      if (!synthesizer || !midiBuffer) {
+        statusDiv.textContent = "MIDIファイルがロードされていません。";
+        return;
+      }
+      const bpm = parseInt(tempoInput.value);
+      if (isNaN(bpm) || bpm < 20 || bpm > 400) {
+        statusDiv.textContent = "テンポの値が無効です (20-400 BPM)。";
+        return;
+      }
+      try {
+        await synthesizer.setPlayerTempo(bpm);
+        statusDiv.textContent = `テンポを ${bpm} BPM に設定しました。`;
+        console.log(`Tempo set to ${bpm} BPM.`);
+        // もし再生中であれば、即座にテンポが変わるはず
+      } catch (error) {
+        console.error("テンポ設定エラー:", error);
+        statusDiv.textContent = `テンポ設定エラー: ${error.message}`;
+      }
+    });
+
+    initializeAndLoadDefaultSoundFont();
 
   </script>
 </body>
