@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>MIDI × SoundFont プレイヤー</title>
+</head>
+<body style="text-align:center; font-family:sans-serif;">
+  <h1>MIDI × mini_piano.sf2 プレイヤー</h1>
+  <input type="file" id="midiInput" accept=".mid,.midi"><br>
+  <button id="playBtn" disabled>再生</button>
+  <div id="status"></div>
+  <br>
+  <small>※最初の再生時、sf2ロードに少し時間がかかります</small>
+
+  <!-- FluidSynth WASM Player CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@g200kg/fluidsynth@2.3.4/dist/fluidsynth.js"></script>
+
+  <script>
+    let synth, player, midiBuffer;
+
+    // GitHub Pages内のsf2ファイルのパス
+    const sf2url = "./soundfonts/mini_piano.sf2";
+
+    // FluidSynth の初期化
+    fluidsynth.ready.then(function () {
+      synth = new fluidsynth.Synth();
+      // sf2読み込み
+      fetch(sf2url)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => {
+          synth.sfloadMem(arrayBuffer, true); // true = set as default
+          document.getElementById('status').textContent = "mini_piano.sf2 ロード完了！MIDIを選んでください";
+        });
+    });
+
+    // MIDIファイル選択時
+    document.getElementById('midiInput').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        midiBuffer = new Uint8Array(event.target.result);
+        document.getElementById('playBtn').disabled = false;
+        document.getElementById('status').textContent = "MIDIファイル準備OK。再生ボタンを押してください。";
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // 再生ボタン
+    document.getElementById('playBtn').addEventListener('click', function () {
+      if (!midiBuffer || !synth) return;
+      // 一度止める
+      if (player) player.stop();
+      player = new fluidsynth.Player(synth);
+      player.playMem(midiBuffer);
+      document.getElementById('status').textContent = "再生中...";
+      player.on('endOfScore', function() {
+        document.getElementById('status').textContent = "再生終了";
+      });
+    });
+  </script>
+</body>
+</html>
