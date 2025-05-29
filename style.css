@@ -1,35 +1,70 @@
 body {
-  background: #f4f7fa;
-  color: #212121;
-  font-family: "メイリオ", sans-serif;
+  background: #f8fafc;
+  color: #1a237e;
+  font-family: "メイリオ", "Hiragino Sans", "Arial", sans-serif;
   text-align: center;
-  padding: 2em;
+  margin: 0;
+  padding: 2em 0;
 }
+
 h1 {
-  color: #2196f3;
-  margin-bottom: 1em;
+  color: #1565c0;
+  margin-bottom: 1.5em;
+  font-size: 2.2em;
+  letter-spacing: 0.1em;
 }
+
 ul {
   display: inline-block;
-  text-align: left;
-  padding-left: 0;
+  background: #e3f2fd;
+  border-radius: 1em;
+  padding: 1.2em 2em;
   margin-bottom: 2em;
+  box-shadow: 0 4px 16px #1565c033;
+  text-align: left;
 }
+
 li {
-  margin-bottom: 0.7em;
-  font-size: 1.1em;
+  margin: 0.8em 0;
+  font-size: 1.08em;
 }
+
 a {
   color: #1976d2;
   text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
 }
 a:hover {
+  color: #fbc02d;
   text-decoration: underline;
-  color: #0d47a1;
-}
-iframe {
-  margin-top: 2em;
-  border-radius: 12px;
-  box-shadow: 0 2px 16px #8883;
 }
 
+h2 {
+  color: #3949ab;
+  margin-top: 2em;
+  font-size: 1.4em;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+}
+
+iframe {
+  margin-top: 1.5em;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px #1565c022;
+  background: #fff;
+}
+
+/* スマホでも見やすくするレスポンシブ対応 */
+@media (max-width: 600px) {
+  ul {
+    width: 90vw;
+    padding: 1em 0.7em;
+  }
+  iframe {
+    width: 98vw !important;
+    min-width: 0 !important;
+    max-width: 98vw !important;
+    height: 330px !important;
+  }
+}
