@@ -1,71 +1,70 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>CSSアニメーション実演</title>
-  <style>
-    body {
-      background: #f0f4c3;
-      text-align: center;
-      font-family: "メイリオ", sans-serif;
-      padding: 2em;
-    }
-    .fadein {
-      opacity: 0;
-      transition: opacity 1.5s;
-      font-size: 2em;
-      margin-bottom: 2em;
-    }
-    .fadein.active {
-      opacity: 1;
-    }
-    .spin {
-      display: inline-block;
-      width: 100px;
-      height: 100px;
-      background: #81d4fa;
-      border-radius: 50%;
-      line-height: 100px;
-      font-size: 1.3em;
-      color: #01579b;
-      margin: 2em 0;
-      animation: spin 2s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg);}
-      to { transform: rotate(360deg);}
-    }
-    .scale-btn {
-      display: inline-block;
-      background: #8bc34a;
-      color: #fff;
-      border: none;
-      padding: 1em 2em;
-      border-radius: 2em;
-      font-size: 1.1em;
-      margin-top: 2em;
-      cursor: pointer;
-      transition: transform 0.3s;
-    }
-    .scale-btn:hover {
-      transform: scale(1.2);
-      background: #558b2f;
-    }
-  </style>
-</head>
-<body>
-  <div class="fadein" id="fadeinText">ふわっと現れるテキスト</div>
-  <div class="spin">ぐるぐる</div>
-  <br>
-  <button class="scale-btn">マウスで大きくなるボタン</button>
+body {
+  background: #f8fafc;
+  color: #1a237e;
+  font-family: "メイリオ", "Hiragino Sans", "Arial", sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 2em 0;
+}
 
-  <script>
-    // ページ表示から0.8秒後にfadeinを発動
-    window.onload = function() {
-      setTimeout(function() {
-        document.getElementById('fadeinText').classList.add('active');
-      }, 800);
-    }
-  </script>
-</body>
-</html>
+h1 {
+  color: #1565c0;
+  margin-bottom: 1.5em;
+  font-size: 2.2em;
+  letter-spacing: 0.1em;
+}
+
+ul {
+  display: inline-block;
+  background: #e3f2fd;
+  border-radius: 1em;
+  padding: 1.2em 2em;
+  margin-bottom: 2em;
+  box-shadow: 0 4px 16px #1565c033;
+  text-align: left;
+}
+
+li {
+  margin: 0.8em 0;
+  font-size: 1.08em;
+}
+
+a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+a:hover {
+  color: #fbc02d;
+  text-decoration: underline;
+}
+
+h2 {
+  color: #3949ab;
+  margin-top: 2em;
+  font-size: 1.4em;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+}
+
+iframe {
+  margin-top: 1.5em;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px #1565c022;
+  background: #fff;
+}
+
+/* スマホでも見やすくするレスポンシブ対応 */
+@media (max-width: 600px) {
+  ul {
+    width: 90vw;
+    padding: 1em 0.7em;
+  }
+  iframe {
+    width: 98vw !important;
+    min-width: 0 !important;
+    max-width: 98vw !important;
+    height: 330px !important;
+  }
+}
