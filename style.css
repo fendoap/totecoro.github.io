@@ -1,17 +1,71 @@
-body {
-  background: #fafafa;
-  color: #222;
-  font-family: "メイリオ", sans-serif;
-}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>CSSアニメーション実演</title>
+  <style>
+    body {
+      background: #f0f4c3;
+      text-align: center;
+      font-family: "メイリオ", sans-serif;
+      padding: 2em;
+    }
+    .fadein {
+      opacity: 0;
+      transition: opacity 1.5s;
+      font-size: 2em;
+      margin-bottom: 2em;
+    }
+    .fadein.active {
+      opacity: 1;
+    }
+    .spin {
+      display: inline-block;
+      width: 100px;
+      height: 100px;
+      background: #81d4fa;
+      border-radius: 50%;
+      line-height: 100px;
+      font-size: 1.3em;
+      color: #01579b;
+      margin: 2em 0;
+      animation: spin 2s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg);}
+      to { transform: rotate(360deg);}
+    }
+    .scale-btn {
+      display: inline-block;
+      background: #8bc34a;
+      color: #fff;
+      border: none;
+      padding: 1em 2em;
+      border-radius: 2em;
+      font-size: 1.1em;
+      margin-top: 2em;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .scale-btn:hover {
+      transform: scale(1.2);
+      background: #558b2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="fadein" id="fadeinText">ふわっと現れるテキスト</div>
+  <div class="spin">ぐるぐる</div>
+  <br>
+  <button class="scale-btn">マウスで大きくなるボタン</button>
 
-h1 {
-  color: #009688;
-  font-size: 2em;
-}
-
-ul {
-  padding-left: 1em;
-}
-li {
-  margin-bottom: 0.7em;
-}
+  <script>
+    // ページ表示から0.8秒後にfadeinを発動
+    window.onload = function() {
+      setTimeout(function() {
+        document.getElementById('fadeinText').classList.add('active');
+      }, 800);
+    }
+  </script>
+</body>
+</html>
