@@ -2,56 +2,70 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>CSSアニメーション サンプル</title>
+  <title>CSSアニメーション実演</title>
   <style>
     body {
-      background: #f7fafc;
+      background: #f0f4c3;
       text-align: center;
-      padding: 3em;
       font-family: "メイリオ", sans-serif;
+      padding: 2em;
     }
-
-    h1 {
-      color: #1565c0;
-      margin-bottom: 2em;
+    .fadein {
       opacity: 0;
-      animation: fadeIn 1.5s 0.3s forwards;
+      transition: opacity 1.5s;
+      font-size: 2em;
+      margin-bottom: 2em;
     }
-
-    .spin-btn {
-      background: linear-gradient(90deg, #42a5f5, #fbc02d);
+    .fadein.active {
+      opacity: 1;
+    }
+    .spin {
+      display: inline-block;
+      width: 100px;
+      height: 100px;
+      background: #81d4fa;
+      border-radius: 50%;
+      line-height: 100px;
+      font-size: 1.3em;
+      color: #01579b;
+      margin: 2em 0;
+      animation: spin 2s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg);}
+      to { transform: rotate(360deg);}
+    }
+    .scale-btn {
+      display: inline-block;
+      background: #8bc34a;
       color: #fff;
-      font-size: 1.4em;
-      font-weight: bold;
       border: none;
+      padding: 1em 2em;
       border-radius: 2em;
-      padding: 1em 2.5em;
+      font-size: 1.1em;
       margin-top: 2em;
       cursor: pointer;
-      box-shadow: 0 6px 24px #1565c033;
-      opacity: 0;
-      transform: scale(0.8) rotate(-10deg);
-      animation:
-        fadeIn 1.2s 1s forwards,
-        spin 2s 2.2s linear infinite;
-      /* 上記で 1s後にフェードインし、その後ずっと回転 */
+      transition: transform 0.3s;
     }
-
-    /* フェードイン効果 */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    /* 回転アニメーション */
-    @keyframes spin {
-      0%   { transform: scale(1) rotate(0deg);}
-      100% { transform: scale(1) rotate(360deg);}
+    .scale-btn:hover {
+      transform: scale(1.2);
+      background: #558b2f;
     }
   </style>
 </head>
 <body>
-  <h1>CSSアニメーションを試そう！</h1>
-  <button class="spin-btn">ぐるぐる回るボタン</button>
+  <div class="fadein" id="fadeinText">ふわっと現れるテキスト</div>
+  <div class="spin">ぐるぐる</div>
+  <br>
+  <button class="scale-btn">マウスで大きくなるボタン</button>
+
+  <script>
+    // ページ表示から0.8秒後にfadeinを発動
+    window.onload = function() {
+      setTimeout(function() {
+        document.getElementById('fadeinText').classList.add('active');
+      }, 800);
+    }
+  </script>
 </body>
 </html>
