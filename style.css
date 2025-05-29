@@ -1,71 +1,70 @@
 body {
-  font-family: sans-serif; /* 基本のフォント */
-  line-height: 1.6;      /* 行間を少し広めに */
-  margin: 0;
-  padding: 0;
-  background-color: #f8f9fa;
-  color: #212529;
-}
-
-.container {
-  width: 80%;            /* コンテンツ幅を80%に */
-  max-width: 960px;      /* 最大幅を指定 */
-  margin: 0 auto;        /* 中央寄せ */
-  padding: 20px;
-}
-
-header {
-  background-color: #e9ecef;
-  padding: 20px 0;
+  background: #f8fafc;
+  color: #1a237e;
+  font-family: "メイリオ", "Hiragino Sans", "Arial", sans-serif;
   text-align: center;
-}
-
-header h1 {
   margin: 0;
-  color: #007bff;
-  font-family: 'Roboto', sans-serif; /* 見出しのみフォントを変更 */
+  padding: 2em 0;
 }
 
-nav ul {
-  list-style: none;
-  padding: 0;
-  text-align: center;
+h1 {
+  color: #1565c0;
+  margin-bottom: 1.5em;
+  font-size: 2.2em;
+  letter-spacing: 0.1em;
 }
 
-nav ul li {
-  display: inline-block; /* ナビゲーションを横並びに */
-  margin-right: 20px;
+ul {
+  display: inline-block;
+  background: #e3f2fd;
+  border-radius: 1em;
+  padding: 1.2em 2em;
+  margin-bottom: 2em;
+  box-shadow: 0 4px 16px #1565c033;
+  text-align: left;
 }
 
-nav ul li a {
+li {
+  margin: 0.8em 0;
+  font-size: 1.08em;
+}
+
+a {
+  color: #1976d2;
   text-decoration: none;
-  color: #007bff;
+  font-weight: bold;
+  transition: color 0.2s;
 }
-
-nav ul li a:hover {
+a:hover {
+  color: #fbc02d;
   text-decoration: underline;
 }
 
-main {
-  padding: 20px 0;
+h2 {
+  color: #3949ab;
+  margin-top: 2em;
+  font-size: 1.4em;
+  font-weight: normal;
+  letter-spacing: 0.05em;
 }
 
-footer {
-  text-align: center;
-  padding: 20px 0;
-  background-color: #e9ecef;
-  font-size: 0.9em;
-  margin-top: 40px;
+iframe {
+  margin-top: 1.5em;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px #1565c022;
+  background: #fff;
 }
 
-/* スマートフォン向けの調整例 */
-@media (max-width: 768px) {
-  .container {
-    width: 95%;
+/* スマホでも見やすくするレスポンシブ対応 */
+@media (max-width: 600px) {
+  ul {
+    width: 90vw;
+    padding: 1em 0.7em;
   }
-
-  nav ul li {
-    display: block; /* ナビゲーションを縦並びに変更 */
-    margin-bottom: 10px;
+  iframe {
+    width: 98vw !important;
+    min-width: 0 !important;
+    max-width: 98vw !important;
+    height: 330px !important;
   }
 }
