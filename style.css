@@ -1,70 +1,57 @@
-body {
-  background: #f8fafc;
-  color: #1a237e;
-  font-family: "メイリオ", "Hiragino Sans", "Arial", sans-serif;
-  text-align: center;
-  margin: 0;
-  padding: 2em 0;
-}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>CSSアニメーション サンプル</title>
+  <style>
+    body {
+      background: #f7fafc;
+      text-align: center;
+      padding: 3em;
+      font-family: "メイリオ", sans-serif;
+    }
 
-h1 {
-  color: #1565c0;
-  margin-bottom: 1.5em;
-  font-size: 2.2em;
-  letter-spacing: 0.1em;
-}
+    h1 {
+      color: #1565c0;
+      margin-bottom: 2em;
+      opacity: 0;
+      animation: fadeIn 1.5s 0.3s forwards;
+    }
 
-ul {
-  display: inline-block;
-  background: #e3f2fd;
-  border-radius: 1em;
-  padding: 1.2em 2em;
-  margin-bottom: 2em;
-  box-shadow: 0 4px 16px #1565c033;
-  text-align: left;
-}
+    .spin-btn {
+      background: linear-gradient(90deg, #42a5f5, #fbc02d);
+      color: #fff;
+      font-size: 1.4em;
+      font-weight: bold;
+      border: none;
+      border-radius: 2em;
+      padding: 1em 2.5em;
+      margin-top: 2em;
+      cursor: pointer;
+      box-shadow: 0 6px 24px #1565c033;
+      opacity: 0;
+      transform: scale(0.8) rotate(-10deg);
+      animation:
+        fadeIn 1.2s 1s forwards,
+        spin 2s 2.2s linear infinite;
+      /* 上記で 1s後にフェードインし、その後ずっと回転 */
+    }
 
-li {
-  margin: 0.8em 0;
-  font-size: 1.08em;
-}
+    /* フェードイン効果 */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
 
-a {
-  color: #1976d2;
-  text-decoration: none;
-  font-weight: bold;
-  transition: color 0.2s;
-}
-a:hover {
-  color: #fbc02d;
-  text-decoration: underline;
-}
-
-h2 {
-  color: #3949ab;
-  margin-top: 2em;
-  font-size: 1.4em;
-  font-weight: normal;
-  letter-spacing: 0.05em;
-}
-
-iframe {
-  margin-top: 1.5em;
-  border-radius: 14px;
-  box-shadow: 0 4px 20px #1565c022;
-  background: #fff;
-}
-
-/* スマホでも見やすくするレスポンシブ対応 */
-@media (max-width: 600px) {
-  ul {
-    width: 90vw;
-    padding: 1em 0.7em;
-  }
-  iframe {
-    width: 98vw !important;
-    min-width: 0 !important;
-    max-width: 98vw !important;
-    height: 330px !important;
-  }
-}
+    /* 回転アニメーション */
+    @keyframes spin {
+      0%   { transform: scale(1) rotate(0deg);}
+      100% { transform: scale(1) rotate(360deg);}
+    }
+  </style>
+</head>
+<body>
+  <h1>CSSアニメーションを試そう！</h1>
+  <button class="spin-btn">ぐるぐる回るボタン</button>
+</body>
+</html>
