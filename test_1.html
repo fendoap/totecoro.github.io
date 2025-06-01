@@ -2,31 +2,28 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Tone.js 入門</title>
+  <title>Tone.js シンセサンプル</title>
 </head>
 <body>
-  <!-- ここにデモ用の要素を置く -->
-  <h1>Tone.js 基本デモ</h1>
-  <button id="playBtn">Play C4 </button>
+  <h1>Tone.js でシンセを鳴らす</h1>
+  <button id="playBtn">Play C4</button>
 
-  <!-- Tone.js 本体を CDN から読み込む -->
+  <!-- Tone.js を読み込み -->
   <script src="https://cdn.jsdelivr.net/npm/tone@latest/build/Tone.js"></script>
-  <!-- この下に自分の JS を書くか、外部ファイルを読み込む -->
   <script>
-    // ここに Tone.js を使ったコードを記述します
-   document.addEventListener("DOMContentLoaded", ()=>{
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1) シンセを生成してスピーカー（Destination）に接続
+      const synth = new Tone.Synth().toDestination();
 
-     const synth = new Tone.Synth().toDestination();
-
-     const playBtn = document.getElementByid("playBtn");
-     playBtn.addEventListener("click",async()=>{
-       await Tone.start();
-       synth.triggerAttackRelease("C4","8n");
-     });
-     
-   });
-    
+      // 2) ボタンをクリックすると、C4 を短く鳴らす
+      const playBtn = document.getElementById("playBtn");
+      playBtn.addEventListener("click", async () => {
+        await Tone.start(); // ブラウザ規制をクリア
+        synth.triggerAttackRelease("C4", "8n"); // 8分音符の長さで C4 を鳴らす
+      });
+    });
   </script>
 </body>
 </html>
+
 
