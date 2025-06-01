@@ -7,22 +7,9 @@
 <body>
   <h1>波形・フィルタのリアルタイム操作</h1>
 
-  <!-- 波形タイプを選ぶドロップダウン -->
-  <label for="waveSelect">Waveform:</label>
-  <select id="waveSelect">
-    <option value="sine">sine</option>
-    <option value="triangle">triangle</option>
-    <option value="square">square</option>
-    <option value="sawtooth">sawtooth</option>
-  </select>
-  <br />
 
-  <!-- フィルタのカットオフ周波数を動かすスライダー -->
-  <label for="cutoffSlider">
-    Cutoff: <span id="cutoffLabel">1000</span> Hz
-  </label>
-  <input type="range" id="cutoffSlider" min="100" max="5000" step="1" value="1000" />
-  <br /><br />
+
+
 
   <button id="playBtn">Play Note</button>
 
@@ -30,35 +17,14 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // 1) ローパスフィルタを用意（初期 cutoff 1000Hz）
-      const filter = new Tone.Filter({
-        type: "lowpass",
-        frequency: 1000,
-        rolloff: -12,
-        Q: 1
-      }).toDestination();
+
 
       // 2) シンセを生成し、まずはデフォルトで sine 波を使う
-      const synth = new Tone.Synth({ oscillator: { type: "sine" } })
-        .connect(filter);
+      const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        
 
       // 3) ドロップダウンとスライダーの要素を取得
-      const waveSelect = document.getElementById("waveSelect");
-      const cutoffSlider = document.getElementById("cutoffSlider");
-      const cutoffLabel = document.getElementById("cutoffLabel");
       const playBtn = document.getElementById("playBtn");
-
-      // 4) 波形タイプを変更するとき
-      waveSelect.addEventListener("change", (e) => {
-        const type = e.target.value;           // "sine", "triangle", など
-        synth.oscillator.type = type;          // オシレータの波形を更新
-      });
-
-      // 5) フィルタのカットオフをリアルタイムに変更するとき
-      cutoffSlider.addEventListener("input", (e) => {
-        const freq = Number(e.target.value);
-        cutoffLabel.textContent = freq;
-        filter.frequency.value = freq;         // フィルタのカットオフ周波数を更新
-      });
 
       // 6) ボタンを押したら音を鳴らす
       playBtn.addEventListener("click", async () => {
