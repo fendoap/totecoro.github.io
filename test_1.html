@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>簡単サウンドサンプル</title>
+</head>
+<body>
+  <h1>簡単サウンドテスト</h1>
+  <label for="freqSlider">Frequency: <span id="freqLabel">440</span> Hz</label>
+  <input type="range" id="freqSlider" min="100" max="2000" value="440" step="1" />
+  <button id="playBtn">Play Note</button>
+
+  <!-- CDN 経由で Tone.js を読み込む -->
+  <script src="https://cdn.jsdelivr.net/npm/tone@latest/build/Tone.js"></script>
+  <script src="main_snd.js"></script>
+</body>
+</html>
