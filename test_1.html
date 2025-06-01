@@ -6,6 +6,14 @@
 </head>
 <body>
   <h1>Tone.js でシンセを鳴らす</h1>
+
+    <!-- フィルタのカットオフ周波数を動かすスライダー -->
+  <label for="cutoffSlider">
+    Cutoff: <span id="cutoffLabel">1000</span> Hz
+  </label>
+  <input type="range" id="cutoffSlider" min="100" max="5000" step="1" value="1000" />
+  <br /><br />
+  
   <button id="playBtn">Play C4</button>
 
   <!-- Tone.js を読み込み -->
