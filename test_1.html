@@ -28,7 +28,7 @@
 const reverb = new Tone.Reverb({
      decay: 2.5,      // 残響（リバーブ）時間（秒）
      preDelay: 0.1,  // 初期遅延（秒）
-     wet: 0.4  // 初期値としてドライ&ウェット 50:50
+     wet: 0.1  // 初期値としてドライ&ウェット 50:50
     }).connect(compressor);
     
 const fbDelay = new Tone.FeedbackDelay({
@@ -53,7 +53,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:24,
   oscillator: {
-    type: "sine",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -159,10 +159,10 @@ const patterns = {
      
    
  
-    synth.triggerAttackRelease(chord, "8n", time,0.8);
+    synth.triggerAttackRelease(chord, "8n", time,0.6);
      
      
-     synth.triggerAttackRelease(melo, "16n", time,0.2);
+     synth.triggerAttackRelease(melo, "16n", time,0.15);
 
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
