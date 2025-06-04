@@ -62,7 +62,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のエンベロープ（音量エンベロープ） ──
   envelope: {
     attack: 0.02,
-    decay: 0.4,
+    decay: 0.5,
     sustain: 0.8,
     release: 1
   },
@@ -70,10 +70,10 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   filterEnvelope: {
     attack: 0.01,
     decay: 0.4,
-    sustain: 0.2,
+    sustain: 0.8,
     release: 1,
-    baseFrequency: 2000,
-    octaves: 3
+    baseFrequency: 4000,
+    octaves: 2
   }
 }).connect(master_bus);
 
@@ -130,14 +130,14 @@ const patterns = {
 
      const chord = chords[(count/8) % chords.length];
       
-     const melo = melos[(count/2) % melos.length];
+     const melo = melos[(count) % melos.length];
      
    
     chord_count++;   
     synth.triggerAttackRelease(chord, "4n", time,0.8);
      
      
-     synth.triggerAttackRelease(melo, "16n", time,0.5);
+     synth.triggerAttackRelease(melo, "16n", time,0.3);
 
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
