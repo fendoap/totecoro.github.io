@@ -42,8 +42,8 @@ const master_bus = new Tone.Channel().connect(fbDelay);
     
 const sample = new Tone.Players({
   kick: "dance_kick_2.wav",
-  snare: "dance_kick_2.wav"
-  hh: "dance_kick_2.wav"
+  snare: "clap snare.wav"
+  hh: "closed_hihat_808.wav"
 
 }).connect(compressor);
 sample.autostart = false; // 自動再生はしない
