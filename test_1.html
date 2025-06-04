@@ -170,10 +170,10 @@ const patterns = {
      
    
  
-    synth.triggerAttackRelease(chord, "8n", time,0.4);
+    synth.triggerAttackRelease(chord, "8n", time,0.2);
      
      if(pat[count%32]==1){
-     synth.triggerAttackRelease(melo, "16n", time,0.4);
+     synth.triggerAttackRelease(melo, "16n", time,0.2);
      }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
