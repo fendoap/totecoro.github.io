@@ -48,9 +48,10 @@ const sample = new Tone.Players({
 sample.autostart = false; // 自動再生はしない
 
 // PolySynth を作成し、★MonoSynth のパラメータをオブジェクトで指定★
-const maxVoices = 12;
-const synth = new Tone.PolySynth(maxVoices,Tone.MonoSynth, {
+    
+const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
+  maxPolyphony:12,
   oscillator: {
     type: "sine",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
