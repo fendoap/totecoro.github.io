@@ -99,6 +99,15 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   "G2", "Bb4", "D3", "F3"
 ];
 
+const patterns = {
+  kick:  [1, 0, 0, 0,  1,  0, 0, 0,
+          1, 0, 0, 0,  1,  0, 0, 0],
+  snare: [0, 0, 0, 0,  1,  0, 0, 0,
+          0, 0, 0, 0,  1,  0, 0, 0],
+  hh:    [1, 1, 1, 1,  1,  1, 1, 1,
+          1, 1, 1, 1,  1,  1, 1, 1]
+};
+
 
 
      const chord = chords[(chord_count) % chords.length];
@@ -112,7 +121,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
      
       synth.triggerAttackRelease(melo, "16n", time);
 
-      if (patterns.kick[i]) {
+      if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
       }
     
