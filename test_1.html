@@ -96,8 +96,8 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   ["C3", "E3", "G3", "D4"],
         
   ["G2", "G3", "B3", "D4"],
-  ["G#2","G#3","B3", "D4"],
   ["G2", "G3", "B3", "D4"],
+  ["G#2","G#3","B3", "D4"],        
   ["G#2","G#3","B3", "D4"],
         
   ["A2", "G3", "C4", "E4"],      
@@ -155,7 +155,7 @@ const patterns = {
      }else{
         chord = chords2[(count/4) % chords.length];
      }
-     const melo = melos[(count) % melos.length];
+     const melo = melos[(count/2) % melos.length];
      
    
  
