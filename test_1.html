@@ -151,15 +151,15 @@ const patterns = {
      let chord;
 
      if(chord_count<4){
-       chord = chords[(count/4) % chords.length];
+       chord = chords[(count/2) % chords.length];
      }else{
-        chord = chords2[(count/4) % chords.length];
+        chord = chords2[(count/2) % chords.length];
      }
      const melo = melos[(count/2) % melos.length];
      
    
  
-    synth.triggerAttackRelease(chord, "8n", time,0.6);
+    synth.triggerAttackRelease(chord, "4n", time,0.6);
      
      
      synth.triggerAttackRelease(melo, "16n", time,0.15);
