@@ -81,7 +81,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
     // ループ：四分音符ごとに音を鳴らす
     const loop = new Tone.Loop((time) => {
       console.log("count:", count);
-
+/*
       const chords = [
   ["F3", "A3", "C4", "E4"],
   ["F3", "A3", "C4", "E4"],
@@ -93,6 +93,20 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
         
   ["A2", "G3", "C4", "E4"],      
   ["A2", "G3", "C4", "E4"]
+];
+  */
+      const chords = [
+  ["F2", "C3", "G4"],
+  ["F2", "A3", "C4", "E4"],
+  
+  ["G2", "G3", "B3", "G4"],
+  ["G2", "D3", "C4", "E4"],
+        
+  ["A2", "A3", "C4", "B4"],
+  ["A2", "E3","E4", "G4"],
+        
+  ["A2", "E3", "A3", "E4","A4"],      
+  ["A2", "C4", "G4"]
 ];
       
  const melos = [
