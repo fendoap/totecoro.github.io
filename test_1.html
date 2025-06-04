@@ -2,36 +2,134 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>波形を切り替えるデモ</title>
+  <title>Tone.js 再生・停止テンプレ</title>
+  <script src="https://unpkg.com/tone@latest/build/Tone.js"></script>
 </head>
 <body>
-  <h1>波形・フィルタのリアルタイム操作</h1>
+  <h2>再生・停止 テンプレート</h2>
+  <button id="startBtn">▶ スタート</button>
+  <button id="stopBtn">■ ストップ</button>
 
-
-
-
-
-  <button id="playBtn">Play Note</button>
-
-  <script src="https://cdn.jsdelivr.net/npm/tone@latest/build/Tone.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // 1) ローパスフィルタを用意（初期 cutoff 1000Hz）
+    let count = 0;
+    let chord_count=0;
+
+    // シンセ用意
+    const limiter = new Tone.Limiter(-6).toDestination();
+    const compressor = new Tone.Compressor({
+  threshold: -24, // dB 単位のしきい値。入力レベルがこの値を超えると圧縮開始
+  ratio: 10,       // 圧縮比（例:4 ＝ 4:1）。入力がしきい値を 4dB 超過すると、出力は 1dB 超過の扱いに
+  attack: 0.003,  // アタックタイム（秒）。しきい値超過後に圧縮がかかり始めるまでの時間
+  release: 0.250, // リリースタイム（秒）。圧縮をかけた後、元のゲインに戻るまでの時間
+  knee: 20        // ニー（dB）。この範囲内で徐々に圧縮がかかる。0 ならハードニー。
+}).connect(limiter);
+
+// 1) Reverb を生成し、wet を 0.5 に初期設定
+const reverb = new Tone.Reverb({
+     decay: 1.5,      // 残響（リバーブ）時間（秒）
+     preDelay: 0.1,  // 初期遅延（秒）
+     wet: 0.3  // 初期値としてドライ&ウェット 50:50
+    }).connect(compressor);
+    
+const fbDelay = new Tone.FeedbackDelay({
+  delayTime: "8n", // 遅延時間（四分音符 1 拍）
+  feedback: 0.4,   // フィードバック比率（0～1）
+  wet: 0.1         // ドライ/ウェット比（0.0～1.0）
+}).connect(reverb);
+
+const master_bus = new Tone.Channel().connect(fbDelay);
+    
 
 
-      // 2) シンセを生成し、まずはデフォルトで sine 波を使う
-      const synth = new Tone.PolySynth(Tone.Synth).toDestination();
-        
+// PolySynth を作成し、★MonoSynth のパラメータをオブジェクトで指定★
+const synth = new Tone.PolySynth(Tone.MonoSynth, {
+  // ── MonoSynth のオシレーター設定 ──
+  oscillator: {
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+  },
+  // ── MonoSynth のフィルター設定（必要に応じて） ──
+  filter: {
+    type: "lowpass",
+    Q: 0.1,
+    rolloff: -12
+  },
+  // ── MonoSynth のエンベロープ（音量エンベロープ） ──
+  envelope: {
+    attack: 0.02,
+    decay: 0.8,
+    sustain: 0.5,
+    release: 1
+  },
+  // ── フィルターエンベロープ（必要な場合） ──
+  filterEnvelope: {
+    attack: 0.01,
+    decay: 0.4,
+    sustain: 0.2,
+    release: 1,
+    baseFrequency: 1000,
+    octaves: 3
+  }
+}).connect(master_bus);
 
-      // 3) ドロップダウンとスライダーの要素を取得
-      const playBtn = document.getElementById("playBtn");
+    
+    // ループ：四分音符ごとに音を鳴らす
+    const loop = new Tone.Loop((time) => {
+      console.log("count:", count);
 
-      // 6) ボタンを押したら音を鳴らす
-      playBtn.addEventListener("click", async () => {
-        await Tone.start();
-        // 現在の波形＋カットオフ設定で 0.5 秒の音を出す
-        synth.triggerAttackRelease("C4", 0.5);
-      });
+      const chords = [
+  ["F2", "A4", "C3", "E3"],
+  ["F2", "A4", "C3", "E3"],
+  ["E2", "G#2", "B5", "D3"],
+  ["E2", "G#2", "B5", "D3"],
+  ["A2", "C3", "E4", "G3"],
+  ["A2", "C3", "E4", "G3"],
+  ["G2", "Bb4", "D3", "F3"],      
+  ["G2", "Bb4", "D3", "F3"]
+];
+      
+ const melos = [
+  
+  "F2", "A4", "C3", "E3",
+  "E2", "G#2", "B5", "D3",
+  "A2", "C3", "E4", "G3",
+  "G2", "Bb4", "D3", "F3"
+];
+
+
+
+     const chord = chords[(chord_count) % chords.length];
+      
+     const melo = melos[(count) % melos.length];
+     
+   if(count%8==0||count%8==2){
+    chord_count++;   
+    synth.triggerAttackRelease(chord, "16n", time);
+   }   
+     
+      synth.triggerAttackRelease(melo, "16n", time);
+    
+      count++;
+      count=count%32;
+    }, "16n");
+    
+
+
+    // スタートボタン
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      await Tone.start();  // AudioContext を起動
+      Tone.Transport.bpm.value = 160;
+
+      count = 0;           // カウント初期化
+      loop.start(0);       // ループ開始
+      Tone.Transport.start();  // タイムライン再生
+    });
+
+    // ストップボタン
+    document.getElementById("stopBtn").addEventListener("click", () => {
+      loop.stop();         // ループ停止
+      Tone.Transport.stop();   // タイムライン停止
+      Tone.Transport.cancel(); // スケジュールもリセット（任意）
+      console.log("Stopped");
     });
   </script>
 </body>
