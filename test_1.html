@@ -53,7 +53,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:24,
   oscillator: {
-    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "square",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -138,11 +138,11 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   "E5", "D5", "C5", "A4"
 ];
 const pat =[
-  1,0, 1, 0,  
+  1,0, 0, 1,  
   0,0, 1, 0,
-  0,0, 0, 1, 
-  0,1, 0, 0,
-  0,0, 1, 0,  
+  1,0, 1, 1, 
+  0,0, 1, 0,
+  1,0, 1, 0,  
   0,1, 0, 1,
   0,0, 1, 1, 
   0,0, 0, 1
