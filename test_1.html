@@ -40,7 +40,7 @@ const fbDelay = new Tone.FeedbackDelay({
 const master_bus = new Tone.Channel().connect(fbDelay);
     
 const sample = new Tone.Players({
-  kick: "kick.wav"
+  kick: "dance_kick_2.wav"
 
 }).connect(compressor);
 sample.autostart = false; // 自動再生はしない
