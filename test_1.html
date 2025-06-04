@@ -126,6 +126,8 @@ const patterns = {
 
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
+        sample.player("snare").start(time);
+        sample.player("hh").start(time);
       }
     
       count++;
