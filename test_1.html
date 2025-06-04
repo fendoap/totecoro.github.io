@@ -83,24 +83,24 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
       console.log("count:", count);
 
       const chords = [
-  ["F2", "A2", "C3", "E3"],
-  ["F2", "A2", "C3", "E3"],
-  ["C2", "E2", "G2", "D3"],
-  ["C2", "E2", "G2", "D3"],
+  ["F3", "A3", "C4", "E4"],
+  ["F3", "A3", "C4", "E4"],
+  ["C3", "E3", "G3", "D4"],
+  ["C3", "E3", "G3", "D4"],
         
-  ["G1", "G2", "B2", "D3"],
-  ["G#1","G#2","B2", "D3"],
+  ["G2", "G3", "B3", "D4"],
+  ["G#2","G#3","B3", "D4"],
         
-  ["A1", "G2", "C3", "E3"],      
-  ["A1", "G2", "C3", "E3"]
+  ["A2", "G3", "C4", "E4"],      
+  ["A2", "G3", "C4", "E4"]
 ];
       
  const melos = [
   
-  "C4", "D4", "E4", "C4",
-  "D4", "E4", "G4", "D4",
-  "C4", "D4", "E4", "G4",
-  "E4", "D4", "C4", "A3"
+  "C5", "D5", "E5", "C5",
+  "D5", "E5", "G5", "D5",
+  "C5", "D5", "E5", "G5",
+  "E5", "D5", "C5", "A4"
 ];
 
 const patterns = {
@@ -114,7 +114,7 @@ const patterns = {
 
 
 
-     const chord = chords[(chord_count/2) % chords.length];
+     const chord = chords[(chord_count/4) % chords.length];
       
      const melo = melos[(count) % melos.length];
      
@@ -144,7 +144,7 @@ const patterns = {
     // スタートボタン
     document.getElementById("startBtn").addEventListener("click", async () => {
       await Tone.start();  // AudioContext を起動
-      Tone.Transport.bpm.value = 160;
+      Tone.Transport.bpm.value = 130;
 
       count = 0;           // カウント初期化
       loop.start(0);       // ループ開始
