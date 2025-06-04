@@ -114,14 +114,14 @@ const patterns = {
 
 
 
-     const chord = chords[(chord_count) % chords.length];
+     const chord = chords[(chord_count/2) % chords.length];
       
      const melo = melos[(count) % melos.length];
      
-   if(count%8==0||count%8==2){
+   
     chord_count++;   
     synth.triggerAttackRelease(chord, "16n", time);
-   }   
+     
      
     //  synth.triggerAttackRelease(melo, "16n", time);
 
