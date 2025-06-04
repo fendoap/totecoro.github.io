@@ -62,8 +62,8 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のエンベロープ（音量エンベロープ） ──
   envelope: {
     attack: 0.02,
-    decay: 0.8,
-    sustain: 0.5,
+    decay: 0.4,
+    sustain: 0.8,
     release: 1
   },
   // ── フィルターエンベロープ（必要な場合） ──
@@ -120,7 +120,7 @@ const patterns = {
      
    
     chord_count++;   
-    synth.triggerAttackRelease(chord, "8n", time,0.8);
+    synth.triggerAttackRelease(chord, "4n", time,0.8);
      
      
      synth.triggerAttackRelease(melo, "16n", time,0.5);
