@@ -139,8 +139,8 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
 ];
 
 const patterns = {
-  kick:  [1, 0, 0, 0,  1,  0, 0, 0,
-          1, 0, 0, 0,  1,  0, 0, 0],
+  kick:  [1, 0, 1, 0,  0,  0, 0, 0,
+          0, 0, 1, 0,  0,  0, 0, 0],
   snare: [0, 0, 0, 0,  1,  0, 0, 0,
           0, 0, 0, 0,  1,  0, 0, 0],
   hh:    [1, 1, 1, 1,  1,  1, 1, 1,
@@ -187,7 +187,7 @@ const patterns = {
     // スタートボタン
     document.getElementById("startBtn").addEventListener("click", async () => {
       await Tone.start();  // AudioContext を起動
-      Tone.Transport.bpm.value = 130;
+      Tone.Transport.bpm.value = 160;
 
       count = 0;           // カウント初期化
       loop.start(0);       // ループ開始
