@@ -28,12 +28,12 @@
 const reverb = new Tone.Reverb({
      decay: 1.5,      // 残響（リバーブ）時間（秒）
      preDelay: 0.1,  // 初期遅延（秒）
-     wet: 0.3  // 初期値としてドライ&ウェット 50:50
+     wet: 0.2  // 初期値としてドライ&ウェット 50:50
     }).connect(compressor);
     
 const fbDelay = new Tone.FeedbackDelay({
   delayTime: "8n", // 遅延時間（四分音符 1 拍）
-  feedback: 0.4,   // フィードバック比率（0～1）
+  feedback: 0.2,   // フィードバック比率（0～1）
   wet: 0.1         // ドライ/ウェット比（0.0～1.0）
 }).connect(reverb);
 
@@ -83,22 +83,24 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
       console.log("count:", count);
 
       const chords = [
-  ["F2", "A4", "C3", "E3"],
-  ["F2", "A4", "C3", "E3"],
-  ["E2", "G#2", "B5", "D3"],
-  ["E2", "G#2", "B5", "D3"],
-  ["A2", "C3", "E4", "G3"],
-  ["A2", "C3", "E4", "G3"],
-  ["G2", "Bb4", "D3", "F3"],      
-  ["G2", "Bb4", "D3", "F3"]
+  ["F2", "A2", "C3", "E3"],
+  ["F2", "A2", "C3", "E3"],
+  ["C2", "E2", "G2", "D3"],
+  ["C2", "E2", "G2", "D3"],
+        
+  ["G1", "G2", "B2", "D3"],
+  ["G#1","G#2","B2", "D3"],
+        
+  ["A1", "G2", "C3", "E3"],      
+  ["A1", "G2", "C3", "E3"]
 ];
       
  const melos = [
   
-  "F2", "A4", "C3", "E3",
-  "E2", "G#2", "B5", "D3",
-  "A2", "C3", "E4", "G3",
-  "G2", "Bb4", "D3", "F3"
+  "C4", "D4", "E4", "C4",
+  "D4", "E4", "G4", "D4",
+  "C4", "D4", "E4", "G4",
+  "E4", "D4", "C4", "A3"
 ];
 
 const patterns = {
