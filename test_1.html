@@ -51,7 +51,7 @@ sample.autostart = false; // 自動再生はしない
 const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   oscillator: {
-    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -72,7 +72,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
     decay: 0.4,
     sustain: 0.2,
     release: 1,
-    baseFrequency: 1000,
+    baseFrequency: 2000,
     octaves: 3
   }
 }).connect(master_bus);
