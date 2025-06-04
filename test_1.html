@@ -137,6 +137,16 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   "C5", "D5", "E5", "G5",
   "E5", "D5", "C5", "A4"
 ];
+const pat =[
+  1,0, 1, 0,  
+  0,0, 1, 0,
+  0,0, 0, 1, 
+  0,1, 0, 0,
+  0,0, 1, 0,  
+  0,1, 0, 1,
+  0,0, 1, 1, 
+  0,0, 0, 1
+];
 
 const patterns = {
   kick:  [1, 0, 1, 0,  0,  0, 0, 0,
@@ -155,15 +165,16 @@ const patterns = {
      }else{
         chord = chords2[(count/2) % chords.length];
      }
+
      const melo = melos[(count) % melos.length];
      
    
  
     synth.triggerAttackRelease(chord, "8n", time,0.4);
      
-     
+     if(pat[count%32]==1){
      synth.triggerAttackRelease(melo, "16n", time,0.4);
-
+     }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
       }
