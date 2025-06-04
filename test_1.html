@@ -26,9 +26,9 @@
 
 // 1) Reverb を生成し、wet を 0.5 に初期設定
 const reverb = new Tone.Reverb({
-     decay: 1.5,      // 残響（リバーブ）時間（秒）
+     decay: 2.5,      // 残響（リバーブ）時間（秒）
      preDelay: 0.1,  // 初期遅延（秒）
-     wet: 0.2  // 初期値としてドライ&ウェット 50:50
+     wet: 0.4  // 初期値としてドライ&ウェット 50:50
     }).connect(compressor);
     
 const fbDelay = new Tone.FeedbackDelay({
@@ -51,7 +51,7 @@ sample.autostart = false; // 自動再生はしない
 const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   oscillator: {
-    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "sine",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -63,7 +63,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   envelope: {
     attack: 0.02,
     decay: 0.5,
-    sustain: 0.8,
+    sustain: 0.5,
     release: 1
   },
   // ── フィルターエンベロープ（必要な場合） ──
@@ -115,8 +115,8 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
         
   ["A2", "E3", "A3", "E4","A4"],   
   ["A2", "E3", "A3", "E4","A4"],   
-  ["A2", "C4", "G4"]
-　 ["A2", "C4", "G4"]
+  ["A2", "C4", "G4"],
+  ["A2", "C4", "G4","E4"]
 ];
       
  const melos = [
@@ -144,10 +144,10 @@ const patterns = {
      
    
     chord_count++;   
-    synth.triggerAttackRelease(chord, "4n", time,0.8);
+    synth.triggerAttackRelease(chord, "8n", time,0.8);
      
      
-     synth.triggerAttackRelease(melo, "16n", time,0.3);
+     synth.triggerAttackRelease(melo, "16n", time,0.2);
 
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
