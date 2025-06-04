@@ -83,20 +83,29 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
     // ループ：四分音符ごとに音を鳴らす
     const loop = new Tone.Loop((time) => {
       console.log("count:", count);
-/*
-      const chords = [
+
+      const chords2 = [
   ["F3", "A3", "C4", "E4"],
   ["F3", "A3", "C4", "E4"],
+  ["F3", "A3", "C4", "E4"],
+  ["F3", "A3", "C4", "E4"],
+        
+  ["C3", "E3", "G3", "D4"],
+  ["C3", "E3", "G3", "D4"],
   ["C3", "E3", "G3", "D4"],
   ["C3", "E3", "G3", "D4"],
         
   ["G2", "G3", "B3", "D4"],
   ["G#2","G#3","B3", "D4"],
+  ["G2", "G3", "B3", "D4"],
+  ["G#2","G#3","B3", "D4"],
         
+  ["A2", "G3", "C4", "E4"],      
+  ["A2", "G3", "C4", "E4"],
   ["A2", "G3", "C4", "E4"],      
   ["A2", "G3", "C4", "E4"]
 ];
-  */
+  
       const chords = [
   ["F2", "C3", "G4"],
   ["F2", "C3", "G4"],
@@ -139,13 +148,17 @@ const patterns = {
 };
 
 
+     const chord;
 
-     const chord = chords[(count/4) % chords.length];
-      
+     if(chord_count<4){
+       chord = chords[(count/4) % chords.length];
+     }else{
+        chord = chords2[(count/4) % chords.length];
+     }
      const melo = melos[(count) % melos.length];
      
    
-    chord_count++;   
+ 
     synth.triggerAttackRelease(chord, "8n", time,0.8);
      
      
@@ -163,6 +176,10 @@ const patterns = {
     
       count++;
       count=count%64;
+      if(count==0){
+        chord_count++;  
+        chord_count=chord_count%8;
+      }
     }, "16n");
     
 
