@@ -26,7 +26,7 @@
 
 // 1) Reverb を生成し、wet を 0.5 に初期設定
 const reverb = new Tone.Reverb({
-     decay: 2.5,      // 残響（リバーブ）時間（秒）
+     decay: 1.5,      // 残響（リバーブ）時間（秒）
      preDelay: 0.1,  // 初期遅延（秒）
      wet: 0.1  // 初期値としてドライ&ウェット 50:50
     }).connect(compressor);
@@ -170,7 +170,7 @@ const patterns = {
      
    
  
-    synth.triggerAttackRelease(chord, "8n", time,0.1);
+    synth.triggerAttackRelease(chord, "4n", time,0.1);
      
      if(pat[count%32]==1){
      synth.triggerAttackRelease(melo, "16n", time,0.1);
