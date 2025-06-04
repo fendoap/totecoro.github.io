@@ -169,11 +169,14 @@ const patterns = {
      const melo = melos[(count) % melos.length];
      
    
- 
-    synth.triggerAttackRelease(chord, "8n", time,0.2);
+   if(chord_count<4){
+    synth.triggerAttackRelease(chord, "8n", time,0.1);
+   }else{
+    synth.triggerAttackRelease(chord, "4n", time,0.1);
+   }
      
      if(pat[count%32]==1){
-     synth.triggerAttackRelease(melo, "16n", time,0.2);
+     synth.triggerAttackRelease(melo, "16n", time,0.1);
      }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
