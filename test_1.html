@@ -53,7 +53,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:24,
   oscillator: {
-    type: "square",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -197,7 +197,7 @@ const patterns = {
    }
      
      if(melo != "-"){
-     synth.triggerAttackRelease(melo, "8n", time,0.05);
+     synth.triggerAttackRelease(melo, "8n", time,0.02);
      }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
