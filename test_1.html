@@ -211,7 +211,7 @@ const patterns = {
     
       count++;
       count=count%256;
-      if(count==0){
+      if(count%32==0){
         chord_count++;  
         chord_count=chord_count%8;
       }
