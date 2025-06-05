@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Tone.js 再生・停止テンプレ</title>
+  <title>Tone.js 再生・停止</title>
   <script src="https://unpkg.com/tone@latest/build/Tone.js"></script>
 </head>
 <body>
@@ -15,11 +15,11 @@
     let chord_count=0;
     
     // シンセ用意
-    const limiter = new Tone.Limiter(-6).toDestination();
+    const limiter = new Tone.Limiter(-1).toDestination();
     const compressor = new Tone.Compressor({
-  threshold: -12, // dB 単位のしきい値。入力レベルがこの値を超えると圧縮開始
-  ratio: 10,       // 圧縮比（例:4 ＝ 4:1）。入力がしきい値を 4dB 超過すると、出力は 1dB 超過の扱いに
-  attack: 0.003,  // アタックタイム（秒）。しきい値超過後に圧縮がかかり始めるまでの時間
+  threshold: -24, // dB 単位のしきい値。入力レベルがこの値を超えると圧縮開始
+  ratio: 20,       // 圧縮比（例:4 ＝ 4:1）。入力がしきい値を 4dB 超過すると、出力は 1dB 超過の扱いに
+  attack: 0.01,  // アタックタイム（秒）。しきい値超過後に圧縮がかかり始めるまでの時間
   release: 0.250, // リリースタイム（秒）。圧縮をかけた後、元のゲインに戻るまでの時間
   knee: 30        // ニー（dB）。この範囲内で徐々に圧縮がかかる。0 ならハードニー。
 }).connect(limiter);
@@ -28,7 +28,7 @@
 const reverb = new Tone.Reverb({
      decay: 1.5,      // 残響（リバーブ）時間（秒）
      preDelay: 0.1,  // 初期遅延（秒）
-     wet: 0.2  // 初期値としてドライ&ウェット 50:50
+     wet: 0.1  // 初期値としてドライ&ウェット 50:50
     }).connect(compressor);
     
 const fbDelay = new Tone.FeedbackDelay({
@@ -46,14 +46,14 @@ const sample = new Tone.Players({
 
 }).connect(compressor);
 sample.autostart = false; // 自動再生はしない
-
+sample.volume.value = 3;
 // PolySynth を作成し、★MonoSynth のパラメータをオブジェクトで指定★
     
 const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:12,
   oscillator: {
-    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -63,7 +63,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   },
   // ── MonoSynth のエンベロープ（音量エンベロープ） ──
   envelope: {
-    attack: 0.02,
+    attack: 0.01,
     decay: 0.1,
     sustain: 0.7,
     release: 0.05
@@ -74,8 +74,8 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
     decay: 0.1,
     sustain: 0.8,
     release: 0.1,
-    baseFrequency: 7000,
-    octaves: 2
+    baseFrequency: 12000,
+    octaves: 1
   }
 }).connect(master_bus);
 
@@ -83,14 +83,29 @@ const synth2 = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:12,
   oscillator: {
-    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+  },
+  // ── MonoSynth のフィルター設定（必要に応じて） ──
+  filter: {
+    type: "lowpass",
+    Q: 0.1,
+    rolloff: -12
   },
   // ── MonoSynth のエンベロープ（音量エンベロープ） ──
   envelope: {
-    attack: 0.02,
-    decay: 0.05,
+    attack: 0.01,
+    decay: 0.1,
     sustain: 0.7,
     release: 0.05
+  },
+  // ── フィルターエンベロープ（必要な場合） ──
+  filterEnvelope: {
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.8,
+    release: 0.1,
+    baseFrequency: 12000,
+    octaves: 1
   }
 }).connect(master_bus);
 
@@ -99,7 +114,7 @@ const synth3 = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:12,
   oscillator: {
-    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -109,7 +124,7 @@ const synth3 = new Tone.PolySynth(Tone.MonoSynth, {
   },
   // ── MonoSynth のエンベロープ（音量エンベロープ） ──
   envelope: {
-    attack: 0.02,
+    attack: 0.01,
     decay: 0.05,
     sustain: 0.7,
     release: 0.05
@@ -120,8 +135,8 @@ const synth3 = new Tone.PolySynth(Tone.MonoSynth, {
     decay: 0.1,
     sustain: 0.8,
     release: 0.1,
-    baseFrequency: 7000,
-    octaves: 2
+    baseFrequency: 12000,
+    octaves: 1
   },
   detune:-10
 }).connect(master_bus);
@@ -178,6 +193,52 @@ const synth3 = new Tone.PolySynth(Tone.MonoSynth, {
   ["A2", "C4", "G4"],
   ["A2", "C4", "G4","E4"]
 ];
+
+      const basses = [
+  ["F1"],
+  ["F1"],
+  ["F1"],
+  ["F1"],
+  
+  ["G1"],  
+  ["G1"],
+        
+  ["G1"],
+  ["G1"],
+        
+  ["A1"],
+  ["A1"],
+        
+  ["A1"],
+  ["A1"],
+        
+  ["A1"],   
+  ["A1"],   
+  ["A1"],
+  ["A1"]
+];
+
+      const basses2 = [
+  ["F1"],
+  ["F1"],
+  ["F1"],
+  ["F1"],
+        
+  ["C1"],
+  ["C1"],
+  ["C1"],
+  ["C1"],
+        
+  ["G1"],
+  ["G1"],
+  ["G#1"],        
+  ["G#1"],
+        
+  ["A1"],      
+  ["A1"],
+  ["A1"],      
+  ["A1"]
+];
     
  const melos = [
   
@@ -191,19 +252,19 @@ const melos2 = [
   // 1行目
   "C4", "-", "D4", "-", "E4", "-", "G4", "-",
   // 2行目
-  "G5", "-", "F5", "-", "E4", "-", "D4", "-",
+  "G4", "-", "D4", "-", "E4", "-", "D4", "-",
   // 3行目
-  "C4", "C4", "D4", "D4", "E6", "E4", "G4", "G5",
+  "C4", "-", "-", "D4", "E4", "E4", "G4", "G4",
   // 4行目
-  "F5", "F5", "E5", "E5", "D5", "D5", "C6", "-",
+  "E4", "-", "E4", "-", "G4", "-", "C4", "-",
   // 5行目
-  "E5", "-", "F5", "-", "G5", "-", "A5", "-",
+  "E4", "-", "A4", "-", "G4", "-", "A4", "-",
   // 6行目
-  "A4", "-", "G5", "-", "F5", "-", "E5", "-",
+  "A4", "-", "G4", "-", "E4", "-", "E4", "-",
   // 7行目
-  "D4", "-", "E5", "-", "C5", "-", "D5", "-",
+  "D4", "-", "E4", "-", "C4", "-", "D4", "-",
   // 8行目
-  "C5", "-", "-",   "-",   "C5", "-", "B5", "-"
+  "C4", "-", "-",   "-",   "E4", "-", "A4", "-"
 ];
 
       
@@ -238,13 +299,16 @@ const patterns2 = {
 
 
      let chord=[];
+     let bass;
 
      if(chord_count<4){
        const idx = Math.floor(count / 4) % chords.length;
        chord = chords[idx];
+       bass = basses[idx];
      }else{
        const idx2 = Math.floor(count / 4) % chords2.length;
        chord = chords2[idx2];
+       bass = basses2[idx2];
      }
      const idx3 = Math.floor(count / 8)% melos.length;
      const idx4 = Math.floor(count / 2)% melos2.length;
@@ -255,25 +319,30 @@ const octaveUpChord = chord.map((note) => {
   return Tone.Frequency(note).transpose(12).toNote();
 });
    
-if(count%2==0){
+if(count%4==0){
    if(chord_count<4){
     
-    synth.triggerAttackRelease(chord, "8n", time,0.2);
-    synth3.triggerAttackRelease(octaveUpChord, "8n", time,0.2);
+    synth.triggerAttackRelease(chord, "4n", time,0.5);
+    synth3.triggerAttackRelease(octaveUpChord, "4n", time,0.5);
+    synth.triggerAttackRelease(bass, "4n", time,1);
    }else{
-    synth.triggerAttackRelease(chord, "8n", time,0.2);
-    synth3.triggerAttackRelease(octaveUpChord, "8n", time,0.2);
+    synth.triggerAttackRelease(chord, "4n", time,0.5);
+    synth3.triggerAttackRelease(octaveUpChord, "4n", time,0.5);
+    synth.triggerAttackRelease(bass, "4n", time,1);
    }
-  
+}
+if(count%3==0){
      
      if(melo != "-"){
-     synth.triggerAttackRelease(melo, "8n", time,0.2);
+     synth2.triggerAttackRelease(melo, "8n", time,0.7);
      }
+}
+if(count%8==0){
      if(melo2 != "-"){
-     synth2.triggerAttackRelease(melo2, "8n", time,0.2);
+     synth2.triggerAttackRelease(melo2, "4n", time,0.7);
      }
-  }
-      if (patterns.kick[count%16]) {
+}
+      if (patterns2.kick[count%16]) {
         sample.player("kick").start(time);
       }
       if (patterns.snare[count%16]) {
@@ -313,4 +382,5 @@ if(count%2==0){
   </script>
 </body>
 </html>
+
 
