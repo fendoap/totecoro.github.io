@@ -196,8 +196,8 @@ const patterns = {
     synth.triggerAttackRelease(chord, "8n", time,0.1);
    }
      
-     if(melo != "-"){
-     synth.triggerAttackRelease(melo, "16n", time,0.05);
+     if(melo == "-"){
+     synth.triggerAttackRelease("C6", "16n", time,0.05);
      }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
