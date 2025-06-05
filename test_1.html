@@ -187,7 +187,7 @@ const patterns = {
         chord = chords2[(count/4) % chords.length];
      }
 
-     const melo = melos[(count) % melos.length];
+     const melo = melos[(count/2) % melos.length];
      
    
    if(chord_count<4){
@@ -196,8 +196,8 @@ const patterns = {
     synth.triggerAttackRelease(chord, "8n", time,0.1);
    }
      
-     if(melo == "-"){
-     synth.triggerAttackRelease("C6", "16n", time,0.05);
+     if(melo != "-"){
+     synth.triggerAttackRelease(melo, "16n", time,0.05);
      }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
