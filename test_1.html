@@ -17,24 +17,24 @@
     // シンセ用意
     const limiter = new Tone.Limiter(-6).toDestination();
     const compressor = new Tone.Compressor({
-  threshold: -24, // dB 単位のしきい値。入力レベルがこの値を超えると圧縮開始
+  threshold: -12, // dB 単位のしきい値。入力レベルがこの値を超えると圧縮開始
   ratio: 10,       // 圧縮比（例:4 ＝ 4:1）。入力がしきい値を 4dB 超過すると、出力は 1dB 超過の扱いに
   attack: 0.003,  // アタックタイム（秒）。しきい値超過後に圧縮がかかり始めるまでの時間
   release: 0.250, // リリースタイム（秒）。圧縮をかけた後、元のゲインに戻るまでの時間
-  knee: 10        // ニー（dB）。この範囲内で徐々に圧縮がかかる。0 ならハードニー。
+  knee: 30        // ニー（dB）。この範囲内で徐々に圧縮がかかる。0 ならハードニー。
 }).connect(limiter);
 
 // 1) Reverb を生成し、wet を 0.5 に初期設定
 const reverb = new Tone.Reverb({
      decay: 1.5,      // 残響（リバーブ）時間（秒）
      preDelay: 0.1,  // 初期遅延（秒）
-     wet: 0.1  // 初期値としてドライ&ウェット 50:50
+     wet: 0.2  // 初期値としてドライ&ウェット 50:50
     }).connect(compressor);
     
 const fbDelay = new Tone.FeedbackDelay({
   delayTime: "8n", // 遅延時間（四分音符 1 拍）
   feedback: 0.1,   // フィードバック比率（0～1）
-  wet: 0.1         // ドライ/ウェット比（0.0～1.0）
+  wet: 0.0         // ドライ/ウェット比（0.0～1.0）
 }).connect(reverb);
 
 const master_bus = new Tone.Channel().connect(fbDelay);
@@ -51,7 +51,53 @@ sample.autostart = false; // 自動再生はしない
     
 const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
-  maxPolyphony:24,
+  maxPolyphony:12,
+  oscillator: {
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+  },
+  // ── MonoSynth のフィルター設定（必要に応じて） ──
+  filter: {
+    type: "lowpass",
+    Q: 0.1,
+    rolloff: -12
+  },
+  // ── MonoSynth のエンベロープ（音量エンベロープ） ──
+  envelope: {
+    attack: 0.02,
+    decay: 0.1,
+    sustain: 0.7,
+    release: 0.05
+  },
+  // ── フィルターエンベロープ（必要な場合） ──
+  filterEnvelope: {
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.8,
+    release: 0.1,
+    baseFrequency: 7000,
+    octaves: 2
+  }
+}).connect(master_bus);
+
+const synth2 = new Tone.PolySynth(Tone.MonoSynth, {
+  // ── MonoSynth のオシレーター設定 ──
+  maxPolyphony:12,
+  oscillator: {
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+  },
+  // ── MonoSynth のエンベロープ（音量エンベロープ） ──
+  envelope: {
+    attack: 0.02,
+    decay: 0.05,
+    sustain: 0.7,
+    release: 0.05
+  }
+}).connect(master_bus);
+
+   
+const synth3 = new Tone.PolySynth(Tone.MonoSynth, {
+  // ── MonoSynth のオシレーター設定 ──
+  maxPolyphony:12,
   oscillator: {
     type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
@@ -74,15 +120,18 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
     decay: 0.1,
     sustain: 0.8,
     release: 0.1,
-    baseFrequency: 4000,
+    baseFrequency: 7000,
     octaves: 2
-  }
+  },
+  detune:-10
 }).connect(master_bus);
+
+
 
     
     // ループ：四分音符ごとに音を鳴らす
     const loop = new Tone.Loop((time) => {
-      console.log("count:", count);
+     // console.log("count:", count);
 
       const chords2 = [
   ["F2","F3", "A3", "C4", "E4"],
@@ -119,7 +168,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   ["G2", "D3", "C4", "E4"],
         
   ["A2", "A3", "C4", "B4"],
-　 ["A2", "A3", "C4", "B4"],
+  ["A2", "A3", "C4", "B4"],
         
   ["A2", "E3","E4", "G4"],
   ["A2", "E3","E4", "G4"],
@@ -135,28 +184,28 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   "C5", "D5", "E5", "C5",
   "D5", "E5", "G5", "D5",
   "C5", "D5", "E5", "G5",
-  "E5", "D5", "C5", "A4"
+  "E5", "D5", "C5", "A5"
 ];
-/*
-const melos = [
+
+const melos2 = [
   // 1行目
-  "C5", "-", "D5", "-", "E5", "-", "G5", "-",
+  "C4", "-", "D4", "-", "E4", "-", "G4", "-",
   // 2行目
-  "G5", "-", "F5", "-", "E5", "-", "D5", "-",
+  "G5", "-", "F5", "-", "E4", "-", "D4", "-",
   // 3行目
-  "C5", "C5", "D5", "D5", "E5", "E5", "G5", "G5",
+  "C4", "C4", "D4", "D4", "E6", "E4", "G4", "G5",
   // 4行目
-  "F5", "F5", "E5", "E5", "D5", "D5", "C5", "-",
+  "F5", "F5", "E5", "E5", "D5", "D5", "C6", "-",
   // 5行目
   "E5", "-", "F5", "-", "G5", "-", "A5", "-",
   // 6行目
-  "A5", "-", "G5", "-", "F5", "-", "E5", "-",
+  "A4", "-", "G5", "-", "F5", "-", "E5", "-",
   // 7行目
-  "D5", "-", "E5", "-", "C5", "-", "D5", "-",
+  "D4", "-", "E5", "-", "C5", "-", "D5", "-",
   // 8行目
   "C5", "-", "-",   "-",   "C5", "-", "B5", "-"
 ];
-*/
+
       
 const pat =[
   1,0, 0, 1,  
@@ -178,27 +227,52 @@ const patterns = {
           1, 1, 1, 1,  1,  1, 1, 1]
 };
 
+const patterns2 = {
+  kick:  [1, 0, 0, 0,  1,  0, 0, 0,
+          1, 0, 0, 0,  1,  0, 0, 0],
+  snare: [0, 0, 0, 0,  1,  0, 0, 0,
+          0, 0, 0, 0,  1,  0, 0, 0],
+  hh:    [1, 1, 1, 1,  1,  1, 1, 1,
+          1, 1, 1, 1,  1,  1, 1, 1]
+};
 
-     let chord;
+
+     let chord=[];
 
      if(chord_count<4){
-       chord = chords[(count/4) % chords.length];
+       const idx = Math.floor(count / 4) % chords.length;
+       chord = chords[idx];
      }else{
-        chord = chords2[(count/4) % chords.length];
+       const idx2 = Math.floor(count / 4) % chords2.length;
+       chord = chords2[idx2];
      }
-
-     const melo = melos[(count/8) % melos.length];
-     
+     const idx3 = Math.floor(count / 8)% melos.length;
+     const idx4 = Math.floor(count / 2)% melos2.length;
+     const melo = melos[idx3];
+     const melo2 = melos2[idx4];
+// map で「各ノート名を Tone.Frequency に変換 → transpose(12) → toNote() を返す」
+const octaveUpChord = chord.map((note) => {
+  return Tone.Frequency(note).transpose(12).toNote();
+});
    
+if(count%2==0){
    if(chord_count<4){
-    synth.triggerAttackRelease(chord, "8n", time,0.1);
+    
+    synth.triggerAttackRelease(chord, "8n", time,0.2);
+    synth3.triggerAttackRelease(octaveUpChord, "8n", time,0.2);
    }else{
-    synth.triggerAttackRelease(chord, "8n", time,0.1);
+    synth.triggerAttackRelease(chord, "8n", time,0.2);
+    synth3.triggerAttackRelease(octaveUpChord, "8n", time,0.2);
    }
+  
      
      if(melo != "-"){
-     synth.triggerAttackRelease(melo, "8n", time,0.02);
+     synth.triggerAttackRelease(melo, "8n", time,0.2);
      }
+     if(melo2 != "-"){
+     synth2.triggerAttackRelease(melo2, "8n", time,0.2);
+     }
+  }
       if (patterns.kick[count%16]) {
         sample.player("kick").start(time);
       }
