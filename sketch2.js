@@ -2,7 +2,7 @@ let textStr = "f-o-o-t-s-t-e-p-s-足-音-f-o-o-t-s-t-e-p-s-足-音-f-o-o-t-s-t-e
 let fontSize = 48;
 
 function setup() {
-  createCanvas(800, 800);
+  createCanvas(windowWidth, windowHeight)
   textSize(fontSize);
   textAlign(CENTER, CENTER);
 }
