@@ -53,7 +53,7 @@ const synth = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:12,
   oscillator: {
-    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -83,7 +83,7 @@ const synth2 = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:12,
   oscillator: {
-    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -114,7 +114,7 @@ const synth3 = new Tone.PolySynth(Tone.MonoSynth, {
   // ── MonoSynth のオシレーター設定 ──
   maxPolyphony:12,
   oscillator: {
-    type: "triangle",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
+    type: "sawtooth",   // 'sine' / 'square' / 'triangle' / 'sawtooth' など
   },
   // ── MonoSynth のフィルター設定（必要に応じて） ──
   filter: {
@@ -322,12 +322,12 @@ const octaveUpChord = chord.map((note) => {
 if(count%4==0){
    if(chord_count<4){
     
-    synth.triggerAttackRelease(chord, "4n", time,0.5);
-    synth3.triggerAttackRelease(octaveUpChord, "4n", time,0.5);
+    synth.triggerAttackRelease(chord, "4n", time,0.4);
+    synth3.triggerAttackRelease(octaveUpChord, "4n", time,0.4);
     synth.triggerAttackRelease(bass, "4n", time,1);
    }else{
-    synth.triggerAttackRelease(chord, "4n", time,0.5);
-    synth3.triggerAttackRelease(octaveUpChord, "4n", time,0.5);
+    synth.triggerAttackRelease(chord, "4n", time,0.4);
+    synth3.triggerAttackRelease(octaveUpChord, "4n", time,0.4);
     synth.triggerAttackRelease(bass, "4n", time,1);
    }
 }
