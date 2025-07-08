@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAAAMAAAAAAAAAAAAAAAAD///8A" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Moving Drum Machine with WAV Recording</title>
+  <style>
+    body { font-family: sans-serif; background: #a88989; color: #cbccd2; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 20px; }
+    button, input { width: 100px; margin: 10px; padding: 8px; font-size: 14px; border-radius: 6px; border: none; background: #222; color: #eee; cursor: pointer; transition: background 0.2s; }
+    button.recording { background: #d9534f; color: #fff; }
+    #steps { display: flex; flex-direction: column; margin-top: 20px; }
+    .row { display: flex; align-items: center; margin: 2px 0; }
+    .label { width: 60px; text-align: right; margin-right: 8px; }
+    .step { width: 20px; height: 20px; margin: 2px; border: 2px solid #444; box-sizing: border-box; cursor: pointer; transition: background 0.1s, border-color 0.1s, margin-left 0.2s ease-out, margin-right 0.2s ease-out; }
+    .step.active { background: #0d6efd; }
+    .step.active.hit { margin-left: 50px; margin-right: 50px; }
+    .step.playing { border-color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>Moving Drum Machine</h1>
+  <div>
+    <label for="bpm">BPM</label>
+    <input id="bpm" type="number" value="120" min="60" max="200">
+    <button id="play">Play</button>
+    <button id="stop">Stop</button>
+    <button id="record">Record</button>
+    <a id="download" style="display:none; margin:10px; color:#0d6efd;">Download WAV</a>
+  </div>
+  <div id="steps"></div>
+<script>
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // 録音用設定
+  let recording = false;
+  let recBuffers = [];
+  let recLength = 0;
+  const recorderNode = audioCtx.createScriptProcessor(4096, 1, 1);
+  recorderNode.onaudioprocess = e => {
+    if (!recording) return;
+    const input = e.inputBuffer.getChannelData(0);
+    recBuffers.push(new Float32Array(input));
+    recLength += input.length;
+  };
+
+  const recordBtn = document.getElementById('record');
+  const downloadLink = document.getElementById('download');
+
+  // 録音トグル
+  recordBtn.addEventListener('click', () => {
+    if (!recording) {
+      // 開始
+      recBuffers = []; recLength = 0; recording = true;
+      audioCtx.resume();
+      recorderNode.connect(audioCtx.destination);
+      recordBtn.classList.add('recording');
+      recordBtn.textContent = 'Stop Rec';
+    } else {
+      // 停止
+      recording = false;
+      recorderNode.disconnect();
+      const wavBlob = encodeWAV(recBuffers, recLength, audioCtx.sampleRate);
+      const url = URL.createObjectURL(wavBlob);
+      downloadLink.href = url;
+      downloadLink.download = 'drum_loop.wav';
+      downloadLink.style.display = 'inline';
+      recordBtn.classList.remove('recording');
+      recordBtn.textContent = 'Record';
+    }
+  });
+
+  function encodeWAV(buffers, length, sampleRate) {
+    const merged = mergeBuffers(buffers, length);
+    const buffer = new ArrayBuffer(44 + merged.length * 2);
+    const view = new DataView(buffer);
+    writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + merged.length * 2, true);
+    writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true); writeString(view, 36, 'data');
+    view.setUint32(40, merged.length * 2, true);
+    let offset = 44;
+    for (let i = 0; i < merged.length; i++) {
+      const s = Math.max(-1, Math.min(1, merged[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      offset += 2;
+    }
+    return new Blob([view], { type: 'audio/wav' });
+  }
+  function mergeBuffers(buffers, length) {
+    const result = new Float32Array(length);
+    let offset = 0;
+    buffers.forEach(buf => { result.set(buf, offset); offset += buf.length; });
+    return result;
+  }
+  function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+
+  // ドラムマシン本体
+  function createWhiteNoise(duration = 0.2) {
+    const src = audioCtx.createBufferSource(); const len = Math.floor(duration * audioCtx.sampleRate);
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    src.buffer = buf; return src;
+  }
+  function createKick() { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.01);
+    osc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc.connect(gain); gain.connect(audioCtx.destination); gain.connect(recorderNode);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+  }
+  function createSnare() { const noise = audioCtx.createBufferSource(); const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+    const dat = buf.getChannelData(0); for (let i = 0; i < dat.length; i++) dat[i] = Math.random() * 2 - 1;
+    noise.buffer = buf; const band = audioCtx.createBiquadFilter(); band.type = 'bandpass'; band.frequency.value = 1800;
+    const gain = audioCtx.createGain(); gain.gain.setValueAtTime(1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    noise.connect(band).connect(gain); gain.connect(audioCtx.destination); gain.connect(recorderNode);
+    noise.start(); noise.stop(audioCtx.currentTime + 0.2);
+  }
+  function createHiHat() { const noise = createWhiteNoise(0.2); const high = audioCtx.createBiquadFilter(); high.type = 'highpass'; high.frequency.value = 8000;
+    const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    noise.connect(high).connect(gain); gain.connect(audioCtx.destination); gain.connect(recorderNode);
+    noise.start(); noise.stop(audioCtx.currentTime + 0.05);
+  }
+  const tracks = [{ name: 'Kick', sound: createKick },{ name: 'Snare', sound: createSnare },{ name: 'HiHat', sound: createHiHat }];
+  const stepsContainer = document.getElementById('steps'); const bpmInput = document.getElementById('bpm');
+  const playBtn = document.getElementById('play'); const stopBtn = document.getElementById('stop');
+  const cells = tracks.map(() => Array(16)); let currentStep = 0, timerId = null;
+  tracks.forEach((track, i) => {
+    const row = document.createElement('div'); row.className = 'row';
+    const label = document.createElement('span'); label.className = 'label'; label.textContent = track.name;
+    row.appendChild(label);
+    for (let s = 0; s < 16; s++) {
+      const cell = document.createElement('div'); cell.className = 'step'; cell.dataset.track = i; cell.dataset.step = s;
+      cell.addEventListener('click', () => cell.classList.toggle('active'));
+      row.appendChild(cell); cells[i][s] = cell;
+    }
+    stepsContainer.appendChild(row);
+  });
+  function tick() { const bpm = Number(bpmInput.value) || 120;
+    const interval = 60000 / bpm / 4;
+    tracks.forEach((track, i) => {
+      cells[i].forEach((c, idx) => c.classList.toggle('playing', idx === currentStep));
+      const cell = cells[i][currentStep]; if (cell.classList.contains('active')) { track.sound(); cell.classList.add('hit'); setTimeout(() => cell.classList.remove('hit'), 250); }
+    });
+    currentStep = (currentStep + 1) % 16; timerId = setTimeout(tick, interval);
+  }
+  playBtn.addEventListener('click', () => { if (!timerId) { audioCtx.resume().then(() => { currentStep = 0; tick(); }); }});
+  stopBtn.addEventListener('click', () => { clearTimeout(timerId); timerId = null; cells.flat().forEach(c => c.classList.remove('playing')); });
+</script>
+</body>
+</html>
