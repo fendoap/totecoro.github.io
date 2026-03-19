@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRフィルタ計算ツール | Totecoro records</title>
+  <link rel="stylesheet" href="../../style.css">
+  <style>
+    .tool-card {
+      width: min(92vw, 760px);
+      margin: 0 auto;
+      padding: 1.5rem;
+      background: #ffffff;
+      border-radius: 1rem;
+      box-shadow: 0 6px 24px rgba(21, 101, 192, 0.12);
+      text-align: left;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .field-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.4rem;
+      color: #3949ab;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .input-row input,
+    .input-row select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #bbdefb;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+
+    .result-box {
+      background: #e3f2fd;
+      border-radius: 0.85rem;
+      padding: 1rem;
+      box-shadow: inset 0 0 0 1px rgba(25, 118, 210, 0.12);
+    }
+
+    .result-label {
+      font-size: 0.9rem;
+      color: #455a64;
+      margin-bottom: 0.4rem;
+    }
+
+    .result-value {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1565c0;
+      word-break: break-word;
+    }
+
+    .formula-note {
+      background: #f8fafc;
+      border-left: 4px solid #90caf9;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      line-height: 1.7;
+    }
+
+    .error-text {
+      color: #c62828;
+      min-height: 1.5em;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .tool-card {
+        padding: 1rem;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>CRフィルタ計算ツール</h1>
+  <p class="site-note">抵抗値とキャパシタ容量から、カットオフ周波数や時定数を計算できます。</p>
+  <p><a href="../index.html">← 遊び場へ戻る</a></p>
+
+  <section class="tool-card">
+    <div class="tool-grid">
+      <div class="field-group">
+        <label for="resistanceValue">抵抗値 R</label>
+        <div class="input-row">
+          <input id="resistanceValue" type="number" min="0" step="any" value="10" />
+          <select id="resistanceUnit">
+            <option value="1">Ω</option>
+            <option value="1000" selected>kΩ</option>
+            <option value="1000000">MΩ</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="capacitanceValue">キャパシタ容量 C</label>
+        <div class="input-row">
+          <input id="capacitanceValue" type="number" min="0" step="any" value="0.01" />
+          <select id="capacitanceUnit">
+            <option value="1e-12">pF</option>
+            <option value="1e-9">nF</option>
+            <option value="0.000001" selected>μF</option>
+            <option value="0.001">mF</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <p id="errorText" class="error-text"></p>
+
+    <div class="results">
+      <div class="result-box">
+        <div class="result-label">抵抗値（Ω）</div>
+        <div id="resistanceOhms" class="result-value">-</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">容量（F）</div>
+        <div id="capacitanceFarads" class="result-value">-</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">時定数 τ = RC</div>
+        <div id="timeConstant" class="result-value">-</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">カットオフ周波数 fc</div>
+        <div id="cutoffFrequency" class="result-value">-</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">周期 1/fc</div>
+        <div id="periodValue" class="result-value">-</div>
+      </div>
+    </div>
+
+    <div class="formula-note">
+      <strong>使用式</strong><br>
+      fc = 1 / (2πRC)<br>
+      τ = RC<br>
+      単純な一次 CR フィルタ（ハイパス/ローパス）の基準計算として使えます。
+    </div>
+  </section>
+
+  <script>
+    const resistanceValue = document.getElementById('resistanceValue');
+    const resistanceUnit = document.getElementById('resistanceUnit');
+    const capacitanceValue = document.getElementById('capacitanceValue');
+    const capacitanceUnit = document.getElementById('capacitanceUnit');
+    const resistanceOhms = document.getElementById('resistanceOhms');
+    const capacitanceFarads = document.getElementById('capacitanceFarads');
+    const timeConstant = document.getElementById('timeConstant');
+    const cutoffFrequency = document.getElementById('cutoffFrequency');
+    const periodValue = document.getElementById('periodValue');
+    const errorText = document.getElementById('errorText');
+
+    function formatNumber(value, unit = '') {
+      if (!Number.isFinite(value)) return '-';
+      if (value === 0) return `0 ${unit}`.trim();
+      return `${value.toExponential(6)} ${unit}`.trim();
+    }
+
+    function updateResults() {
+      const r = Number(resistanceValue.value) * Number(resistanceUnit.value);
+      const c = Number(capacitanceValue.value) * Number(capacitanceUnit.value);
+
+      if (!(r > 0) || !(c > 0)) {
+        errorText.textContent = '抵抗値とキャパシタ容量には 0 より大きい値を入力してください。';
+        resistanceOhms.textContent = '-';
+        capacitanceFarads.textContent = '-';
+        timeConstant.textContent = '-';
+        cutoffFrequency.textContent = '-';
+        periodValue.textContent = '-';
+        return;
+      }
+
+      errorText.textContent = '';
+      const tau = r * c;
+      const fc = 1 / (2 * Math.PI * r * c);
+      const period = 1 / fc;
+
+      resistanceOhms.textContent = formatNumber(r, 'Ω');
+      capacitanceFarads.textContent = formatNumber(c, 'F');
+      timeConstant.textContent = formatNumber(tau, 's');
+      cutoffFrequency.textContent = formatNumber(fc, 'Hz');
+      periodValue.textContent = formatNumber(period, 's');
+    }
+
+    [resistanceValue, resistanceUnit, capacitanceValue, capacitanceUnit].forEach((element) => {
+      element.addEventListener('input', updateResults);
+      element.addEventListener('change', updateResults);
+    });
+
+    updateResults();
+  </script>
+</body>
+</html>
