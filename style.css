@@ -20,58 +20,6 @@ h1 {
   font-size: 1rem;
 }
 
-.page-shell {
-  width: min(94vw, 1080px);
-  margin: 0 auto;
-}
-
-.section-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  align-items: start;
-  margin-top: 2rem;
-}
-
-.section-card {
-  background: #e3f2fd;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 8px 24px rgba(21, 101, 192, 0.12);
-  text-align: left;
-}
-
-.section-card h2 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-}
-
-.section-copy {
-  margin: 0 0 1rem;
-  color: #455a64;
-  line-height: 1.7;
-}
-
-.link-list {
-  display: block;
-  width: auto;
-  margin: 0;
-  padding: 0 0 0 1.25rem;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-  text-align: left;
-}
-
-.link-list li {
-  color: #455a64;
-  margin: 0.6em 0;
-}
-
-.back-link {
-  margin-bottom: 1.5rem;
-}
-
 ul {
   display: inline-block;
   background: #e3f2fd;
