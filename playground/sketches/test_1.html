@@ -5,7 +5,7 @@
   <title>Tone.js 再生・停止</title>
   <script src="https://unpkg.com/tone@latest/build/Tone.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="sketch4.js"></script>
+  <script src="../scripts/sketch4.js"></script>
 
   <style>
     body { font-family: sans-serif; text-align: center; }
@@ -57,9 +57,9 @@ const fbDelay = new Tone.FeedbackDelay({
 const master_bus = new Tone.Channel().connect(fbDelay);
     
 const sample = new Tone.Players({
-  kick: "dance_kick_2.wav",
-  snare: "clap snare.wav",
-  hh: "closed_hihat_808.wav"
+  kick: "../assets/audio/dance_kick_2.wav",
+  snare: "../assets/audio/clap snare.wav",
+  hh: "../assets/audio/closed_hihat_808.wav"
 
 }).connect(compressor);
 sample.autostart = false; // 自動再生はしない
