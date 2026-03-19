@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>遊び場 | Totecoro records</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .playground-shell {
+      width: min(94vw, 1040px);
+      margin: 0 auto;
+    }
+
+    .playground-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+      margin-top: 2rem;
+    }
+
+    .playground-card {
+      background: #e3f2fd;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 8px 24px rgba(21, 101, 192, 0.12);
+      text-align: left;
+    }
+
+    .playground-card h2 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+    }
+
+    .playground-card p {
+      margin: 0 0 1rem;
+      color: #455a64;
+      line-height: 1.7;
+    }
+
+    .playground-card ul {
+      display: block;
+      width: auto;
+      background: rgba(255, 255, 255, 0.65);
+      margin: 0;
+      padding: 1rem 1.25rem;
+    }
+
+    @media (max-width: 600px) {
+      .playground-card {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="playground-shell">
+    <h1>遊び場</h1>
+    <p class="site-note">スケッチとツールをカテゴリごとに分けてまとめています。</p>
+    <p><a href="../index.html">← トップへ戻る</a></p>
+
+    <main class="playground-grid">
+      <section class="playground-card" aria-labelledby="sketch-heading">
+        <h2 id="sketch-heading">スケッチ</h2>
+        <p>音やアニメーションの試作、実験的なページをここにまとめています。</p>
+        <ul>
+          <li><a href="../drum.html">スケッチ 1：ドラムマシン</a></li>
+          <li><a href="../sketch2.html">スケッチ 2：p5.js</a></li>
+          <li><a href="../test_1.html">スケッチ 3：test_1</a></li>
+          <li><a href="../sketch3.html">スケッチ 4：足音コンピ</a></li>
+          <li><a href="../moving_drum_rec1.html">動くドラムマシン</a></li>
+        </ul>
+      </section>
+
+      <section class="playground-card" aria-labelledby="tool-heading">
+        <h2 id="tool-heading">ツール</h2>
+        <p>回路計算や音作りの補助に使える小さなツールをここへ追加していきます。</p>
+        <ul>
+          <li><a href="tools/CR_filter.html">CRフィルタ計算ツール</a></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
