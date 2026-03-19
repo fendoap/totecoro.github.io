@@ -1,0 +1,35 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* スクロールバーを非表示にする */
+}
+
+/* キャンバスとiframeのコンテナ */
+#canvas-container {
+  /* 子要素を absolute で配置するための基準点にする */
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* p5.jsによって生成される <canvas> 要素のスタイル */
+canvas {
+  display: block;
+}
+
+/* Bandcamp 埋め込み iframe のスタイル */
+#bc-embed {
+  /* 親要素(#canvas-container)を基準に絶対配置する */
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 400px;   /* Bandcamp推奨サイズ */
+  height: 472px;  /* Bandcamp推奨サイズ */
+
+  /* canvasより手前に表示するための設定 */
+  z-index: 10;
+
+  border: none;
+}

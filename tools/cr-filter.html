@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CR フィルター計算 | Totecoro records</title>
+  <link rel="stylesheet" href="../assets/styles/style.css">
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">Circuit Tool</p>
+    <h1>CR フィルター計算</h1>
+    <p class="lead">
+      一次の RC / CR フィルターで使う抵抗値 <code>R</code> とコンデンサ値 <code>C</code> から、
+      カットオフ周波数 <code>fc = 1 / (2πRC)</code> を計算します。
+    </p>
+  </header>
+
+  <main class="page-shell">
+    <section class="panel">
+      <ul class="breadcrumbs">
+        <li><a href="../index.html">トップ</a></li>
+        <li>/</li>
+        <li><a href="index.html">ツールコーナー</a></li>
+        <li>/</li>
+        <li>CR フィルター計算</li>
+      </ul>
+
+      <div class="form-grid">
+        <label>
+          抵抗値 R
+          <input id="resistance" type="number" min="0" step="0.1" value="10000">
+        </label>
+        <label>
+          抵抗の単位
+          <select id="resistanceUnit">
+            <option value="1">Ω</option>
+            <option value="1000">kΩ</option>
+            <option value="1000000">MΩ</option>
+          </select>
+        </label>
+        <label>
+          コンデンサ値 C
+          <input id="capacitance" type="number" min="0" step="0.1" value="10">
+        </label>
+        <label>
+          コンデンサの単位
+          <select id="capacitanceUnit">
+            <option value="0.000000000001">pF</option>
+            <option value="0.000000001">nF</option>
+            <option value="0.000001" selected>μF</option>
+            <option value="0.001">mF</option>
+            <option value="1">F</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="result-box">
+        <div class="result-grid">
+          <div>
+            <p>時定数 τ</p>
+            <div id="tauValue" class="result-value">0.100000 s</div>
+          </div>
+          <div>
+            <p>カットオフ周波数 fc</p>
+            <div id="fcValue" class="result-value">1.59 Hz</div>
+          </div>
+        </div>
+        <p id="summary" class="note"></p>
+      </div>
+
+      <p class="note">
+        メモ: ハイパスでもローパスでも、一次 RC 系ならカットオフ周波数の式は同じです。
+        今後このコーナーに他の回路計算ツールも追加していけます。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const resistanceInput = document.getElementById('resistance');
+    const resistanceUnitInput = document.getElementById('resistanceUnit');
+    const capacitanceInput = document.getElementById('capacitance');
+    const capacitanceUnitInput = document.getElementById('capacitanceUnit');
+    const tauValue = document.getElementById('tauValue');
+    const fcValue = document.getElementById('fcValue');
+    const summary = document.getElementById('summary');
+
+    function formatNumber(value) {
+      if (!Number.isFinite(value)) return '-';
+      if (value === 0) return '0';
+      if (Math.abs(value) >= 1000 || Math.abs(value) < 0.01) {
+        return value.toExponential(3);
+      }
+      return value.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    function calculate() {
+      const resistance = Number(resistanceInput.value) * Number(resistanceUnitInput.value);
+      const capacitance = Number(capacitanceInput.value) * Number(capacitanceUnitInput.value);
+
+      if (!(resistance > 0) || !(capacitance > 0)) {
+        tauValue.textContent = '-';
+        fcValue.textContent = '-';
+        summary.textContent = 'R と C は 0 より大きい値を入力してください。';
+        return;
+      }
+
+      const tau = resistance * capacitance;
+      const fc = 1 / (2 * Math.PI * tau);
+
+      tauValue.textContent = `${formatNumber(tau)} s`;
+      fcValue.textContent = `${formatNumber(fc)} Hz`;
+      summary.textContent = `R = ${formatNumber(resistance)} Ω、C = ${formatNumber(capacitance)} F のとき、fc は ${formatNumber(fc)} Hz です。`;
+    }
+
+    [resistanceInput, resistanceUnitInput, capacitanceInput, capacitanceUnitInput].forEach((element) => {
+      element.addEventListener('input', calculate);
+      element.addEventListener('change', calculate);
+    });
+
+    calculate();
+  </script>
+</body>
+</html>

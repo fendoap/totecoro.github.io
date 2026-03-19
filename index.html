@@ -2,40 +2,84 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Totecoro records</title>
-   <link rel="stylesheet" href="style.css"> <!-- ← 追加！ -->
+  <link rel="stylesheet" href="assets/styles/style.css">
 </head>
 <body>
-  <h1>Totecoro records</h1>
-  <ul>
-    <li><a href="release.html">リリース作品</a></li> <!-- ← 追加 -->
-    
-    <li><a href="drum.html">スケッチ 1：ドラムマシン</a></li>
-    <li><a href="sketch2.html">スケッチ 2：p5.js</a></li>
-    <li><a href="test_1.html">スケッチ 3：test_1</a></li> <!-- ← 追加 -->
-    <li><a href="sketch3.html">スケッチ 4：足音コンピ</a></li>
-    <li><a href="moving_drum_rec1.html">動くドラムマシン </a></li>
-  </ul>
+  <header class="hero">
+    <p class="eyebrow">Totecoro records</p>
+    <h1>作品・スケッチ・ツールを整理したトップページ</h1>
+    <p class="lead">
+      音源リリース、実験的なスケッチ、そしてこれから増やしていく電子回路・フィルター計算ツールを、
+      目的別にたどれるように整理しました。
+    </p>
+  </header>
 
-  <h2>足音コンピ footsteps compilation</h2>
-  <iframe style="border: 0; width: 350px; height: 470px;"
-          src="https://bandcamp.com/EmbeddedPlayer/album=2284929423/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/"
-          seamless>
-    <a href="https://totecoro.bandcamp.com/album/footsteps-compilation">
-      足音コンピ footsteps compilation by various artists
-    </a>
-  </iframe>
+  <main class="page-shell">
+    <section class="panel">
+      <div class="section-heading">
+        <h2>コンテンツ</h2>
+        <p>公開中のページをカテゴリごとに移動して、見つけやすくしました。</p>
+      </div>
+      <div class="card-grid two-column">
+        <article class="card">
+          <h3>リリース</h3>
+          <p>Bandcamp の作品一覧ページです。</p>
+          <a class="button-link" href="pages/release.html">リリース作品を見る</a>
+        </article>
+        <article class="card">
+          <h3>ツールコーナー</h3>
+          <p>電子回路やフィルター計算のためのツール置き場です。</p>
+          <a class="button-link" href="tools/index.html">ツールコーナーへ</a>
+        </article>
+      </div>
+    </section>
 
-  <h2>晴れの日／A Perfect Sky</h2>
-<iframe style="border: 0; width: 350px; height: 470px;" src="https://bandcamp.com/EmbeddedPlayer/album=86971639/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" 
-  seamless>
-    <a href="https://totecoro.bandcamp.com/album/a-perfect-sky">
-       晴れの日／A Perfect Sky by various artists
-    </a>
- </iframe>
-  
+    <section class="panel">
+      <div class="section-heading">
+        <h2>スケッチ</h2>
+        <p>音とビジュアルの実験ページを <code>sketches/</code> にまとめました。</p>
+      </div>
+      <ul class="link-list">
+        <li><a href="sketches/drum.html">スケッチ 1：ドラムマシン</a></li>
+        <li><a href="sketches/sketch2.html">スケッチ 2：p5.js</a></li>
+        <li><a href="sketches/test_1.html">スケッチ 3：Tone.js + p5.js</a></li>
+        <li><a href="sketches/sketch3.html">スケッチ 4：足音コンピ</a></li>
+        <li><a href="sketches/moving_drum_rec1.html">動くドラムマシン</a></li>
+      </ul>
+    </section>
 
-  
+    <section class="panel">
+      <div class="section-heading">
+        <h2>Featured releases</h2>
+      </div>
+      <div class="embed-grid">
+        <div>
+          <h3>足音コンピ footsteps compilation</h3>
+          <iframe
+            style="border: 0; width: 100%; height: 470px;"
+            src="https://bandcamp.com/EmbeddedPlayer/album=2284929423/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/"
+            seamless>
+            <a href="https://totecoro.bandcamp.com/album/footsteps-compilation">
+              足音コンピ footsteps compilation by various artists
+            </a>
+          </iframe>
+        </div>
+
+        <div>
+          <h3>晴れの日／A Perfect Sky</h3>
+          <iframe
+            style="border: 0; width: 100%; height: 470px;"
+            src="https://bandcamp.com/EmbeddedPlayer/album=86971639/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/"
+            seamless>
+            <a href="https://totecoro.bandcamp.com/album/a-perfect-sky">
+              晴れの日／A Perfect Sky by various artists
+            </a>
+          </iframe>
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
-
